@@ -1,2 +1,5 @@
-# sd-webui-stable-horde-worker
+# Stable Horde Worker Client for Stable Diffusion WebUI
+
+WIP
+
 
