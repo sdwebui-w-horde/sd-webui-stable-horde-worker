@@ -96,11 +96,17 @@ class StableHorde:
 
         req = await r.json()
 
-        if r.status == 200:
-            return req
+        if r.status != 200:
+            self.handle_error(r.status, req)
+            return
+
+        return req
 
 
     async def handle_request(self, req: Dict[str, Any]):
+        if not req.get('id'):
+            return
+
         sampler_name = req['payload']['sampler_name']
 
         if req['payload']['karras']:
@@ -135,7 +141,7 @@ class StableHorde:
         shared.state.end()
 
         bytesio = io.BytesIO()
-        image.save(bytesio, format="WebP", quality=75)
+        image.save(bytesio, format="WebP", quality=95)
 
         generation = base64.b64encode(bytesio.getvalue()).decode("utf8")
 
@@ -156,3 +162,14 @@ class StableHorde:
         """
         if (r.status == 200 and res.get("reward") is not None):
             print(f"Submission accepted, reward {res['reward']} received.")
+
+    def handle_error(self, status: int, res: Dict[str, Any]):
+        if status == 401:
+            print("ERROR: Invalid API Key")
+        elif status == 403:
+            print(f"ERROR: Access Denied. ({res.get('message', '')})")
+        elif status == 404:
+            print("ERROR: Request Not Found")
+        else:
+            print(f"ERROR: Unknown Error {status}")
+            print(res)
