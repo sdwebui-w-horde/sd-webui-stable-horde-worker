@@ -76,6 +76,31 @@ class StableHorde:
                     import traceback
                     traceback.print_exc()
 
+    def patch_sampler_names(self):
+        """Add more samplers that the Stable Horde supports,
+        but are not included in the default sd_samplers module.
+        """
+        from modules import sd_samplers
+
+        if sd_samplers.samplers_map.get('euler a karras'):
+            # already patched
+            return
+
+        samplers = [
+            sd_samplers.SamplerData("Euler a Karras", lambda model, funcname="sample_euler_ancestral": sd_samplers.KDiffusionSampler(funcname, model), ['k_euler_a_ka'], {'scheduler': 'karras'}),
+            sd_samplers.SamplerData("Euler Karras", lambda model, funcname="sample_euler": sd_samplers.KDiffusionSampler(funcname, model), ['k_euler_ka'], {'scheduler': 'karras'}),
+            sd_samplers.SamplerData("Heun Karras", lambda model, funcname="sample_heun": sd_samplers.KDiffusionSampler(funcname, model), ['k_heun_ka'], {'scheduler': 'karras'}),
+            sd_samplers.SamplerData('DPM adaptive Karras', lambda model, funcname='sample_dpm_adaptive': sd_samplers.KDiffusionSampler(funcname, model), ['k_dpm_ad_ka'], {'scheduler': 'karras'}),
+        ]
+        sd_samplers.samplers.extend(samplers)
+        sd_samplers.samplers_for_img2img.extend(samplers)
+        sd_samplers.all_samplers_map.update({s.name: s for s in samplers})
+        for sampler in samplers:
+            sd_samplers.samplers_map[sampler.name.lower()] = sampler.name
+            for alias in sampler.aliases:
+                sd_samplers.samplers_map[alias.lower()] = sampler.name
+
+
     async def get_popped_request(self) -> Optional[Dict[str, Any]]:
         # https://stablehorde.net/api/
         post_data = {
@@ -107,12 +132,21 @@ class StableHorde:
         if not req.get('id'):
             return
 
-        sampler_name = req['payload']['sampler_name']
+        self.patch_sampler_names()
 
+        print(f"Get popped generation request {req['id']}: {req['payload'].get('prompt', '')}")
+        sampler_name = req['payload']['sampler_name']
+        if sampler_name == 'k_dpm_adaptive':
+            sampler_name = 'k_dpm_ad'
+        if sampler_name not in sd_samplers.samplers_map:
+            print(f"ERROR: Unknown sampler {sampler_name}")
+            return
         if req['payload']['karras']:
             sampler_name += '_ka'
 
         sampler = sd_samplers.samplers_map.get(sampler_name, None)
+        if sampler is None:
+            raise Exception(f"ERROR: Unknown sampler {sampler_name}")
 
         params = {
             "sd_model": shared.sd_model,
@@ -162,6 +196,10 @@ class StableHorde:
         """
         if (r.status == 200 and res.get("reward") is not None):
             print(f"Submission accepted, reward {res['reward']} received.")
+        elif (r.status == 400):
+            print("ERROR: Generation Already Submitted")
+        else:
+            self.handle_error(r.status, res)
 
     def handle_error(self, status: int, res: Dict[str, Any]):
         if status == 401:
