@@ -148,9 +148,18 @@ class StableHorde:
         if sampler is None:
             raise Exception(f"ERROR: Unknown sampler {sampler_name}")
 
+        prompt = req['payload'].get('prompt', '')
+        if "###" in prompt:
+            prompt, negative = prompt.split("###")
+        else:
+            negative = ""
+
+        postprocessors = req['payload'].get('post_processing', None) or []
+
         params = {
             "sd_model": shared.sd_model,
-            "prompt": req['payload']['prompt'],
+            "prompt": prompt.strip(),
+            "negative_prompt": negative.strip(),
             "sampler_name": sampler,
             "cfg_scale": req['payload'].get('cfg_scale', 5.0),
             "seed": req['payload'].get('seed', randint(0, 2**32)),
