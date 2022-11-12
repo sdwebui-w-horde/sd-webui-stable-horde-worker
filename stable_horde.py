@@ -186,7 +186,13 @@ class StableHorde:
         bytesio = io.BytesIO()
         image.save(bytesio, format="WebP", quality=95)
 
-        generation = base64.b64encode(bytesio.getvalue()).decode("utf8")
+        if req.get("r2_upload"):
+            async with aiohttp.ClientSession() as session:
+                await session.put(req.get("r2_upload"), data=bytesio.getvalue())
+            generation = "R2"
+
+        else:
+            generation = base64.b64encode(bytesio.getvalue()).decode("utf8")
 
         await self.submit(req['id'], req['payload']['seed'], generation)
 
