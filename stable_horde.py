@@ -6,9 +6,16 @@ from typing import Any, Dict, List, Optional
 
 import aiohttp
 import numpy as np
+from diffusers.pipelines.stable_diffusion.safety_checker import StableDiffusionSafetyChecker
 from PIL import Image
+from transformers import AutoFeatureExtractor
 
-from modules import shared, call_queue, txt2img, processing, sd_samplers
+from modules import shared, call_queue, txt2img, img2img, processing, sd_samplers
+
+safety_model_id = "CompVis/stable-diffusion-safety-checker"
+safety_feature_extractor = None
+safety_checker = None
+
 
 class StableHordeConfig:
     def __init__(self):
@@ -179,7 +186,13 @@ class StableHorde:
 
         with call_queue.queue_lock:
             processed = processing.process_images(p)
-            image = processed.images[0]
+
+            if req["payload"].get("use_nsfw_censor"):
+                x_image = np.array(processed.images[0])
+                x_checked_image, _ = self.check_safety(x_image)
+                image = Image.fromarray(x_checked_image)
+            else:
+                image = processed.images[0]
 
         shared.state.end()
 
@@ -219,6 +232,21 @@ class StableHorde:
             print("ERROR: Generation Already Submitted")
         else:
             self.handle_error(r.status, res)
+
+
+    # check and replace nsfw content
+    def check_safety(self, x_image):
+        global safety_feature_extractor, safety_checker
+
+        if safety_feature_extractor is None:
+            safety_feature_extractor = AutoFeatureExtractor.from_pretrained(safety_model_id)
+            safety_checker = StableDiffusionSafetyChecker.from_pretrained(safety_model_id)
+
+        safety_checker_input = safety_feature_extractor(x_image, return_tensors="pt")
+        x_checked_image, has_nsfw_concept = safety_checker(images=x_image, clip_input=safety_checker_input.pixel_values)
+
+        return x_checked_image, has_nsfw_concept
+
 
     def handle_error(self, status: int, res: Dict[str, Any]):
         if status == 401:
