@@ -176,6 +176,7 @@ class StableHorde:
             "subseed": req['payload'].get('seed_variation', 1),
             "steps": req['payload']['ddim_steps'],
             "n_iter": req['payload']['n_iter'],
+            "restore_faces": "GFPGAN" in postprocessors,
             "do_not_save_samples": True,
             "do_not_save_grid": True,
         }
