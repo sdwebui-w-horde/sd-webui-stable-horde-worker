@@ -181,7 +181,14 @@ class StableHorde:
             "do_not_save_grid": True,
         }
 
-        p = txt2img.StableDiffusionProcessingTxt2Img(**params)
+        if req['payload'].get('source_image', None) is not None:
+            p = img2img.StableDiffusionProcessingImg2Img(
+            init_images=[req["payload"]["source_image"]],
+            mask=req["payload"]["source_mask"],
+            **params,
+        )
+        else:
+            p = txt2img.StableDiffusionProcessingTxt2Img(**params)
         
         shared.state.begin()
 
