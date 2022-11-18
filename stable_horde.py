@@ -202,6 +202,22 @@ class StableHorde:
             else:
                 image = processed.images[0]
 
+            if "RealESRGAN_x4plus" in postprocessors:
+                from modules.extras import run_extras
+                images, _info, _wtf = run_extras(
+                    image=image, extras_mode=0, resize_mode=0,
+                    show_extras_results=True, upscaling_resize=2,
+                    upscaling_resize_h=None, upscaling_resize_w=None,
+                    upscaling_crop=False, upscale_first=False,
+                    extras_upscaler_1=8, # 8 - RealESRGAN_x4plus
+                    extras_upscaler_2=0,
+                    extras_upscaler_2_visibility=0.0,
+                    gfpgan_visibility=0.0, codeformer_visibility=0.0, codeformer_weight=0.0,
+                    image_folder="", input_dir="", output_dir="",
+                )
+
+                image = images[0]
+
         shared.state.end()
 
         bytesio = io.BytesIO()
