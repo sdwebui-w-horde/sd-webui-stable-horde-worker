@@ -28,6 +28,6 @@ Click the `Enable` checkbox to enable the Stable Horde worker client.
 
 ### Existing issues
 
-- []model name should be typed by user manually](https://github.com/sdwebui-w-horde/sd-webui-stable-horde-worker/issues/2)
+- [model name should be typed by user manually](https://github.com/sdwebui-w-horde/sd-webui-stable-horde-worker/issues/2)
 - only one model is usable
-- []model should be selected manually](https://github.com/sdwebui-w-horde/sd-webui-stable-horde-worker/issues/3)
+- [model should be selected manually](https://github.com/sdwebui-w-horde/sd-webui-stable-horde-worker/issues/3)
