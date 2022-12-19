@@ -29,7 +29,7 @@ def on_app_started(demo: Optional[gr.Blocks], app: FastAPI):
 
 def on_ui_settings():
     section = ('stable-horde', 'Stable Horde')
-    shared.opts.add_option('stable_horde_enable', shared.OptionInfo(True, 'Enable', section=section))
+    shared.opts.add_option('stable_horde_enable', shared.OptionInfo(False, 'Enable', section=section))
     shared.opts.add_option('stable_horde_endpoint', shared.OptionInfo('https://stablehorde.net/', 'Endpoint', section=section))
     shared.opts.add_option('stable_horde_apikey', shared.OptionInfo('', 'API Key', section=section))
     shared.opts.add_option('stable_horde_name', shared.OptionInfo('Stable Horde', 'Team Name', section=section))
