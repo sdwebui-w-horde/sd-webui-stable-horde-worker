@@ -3,12 +3,14 @@ from typing import Optional
 from fastapi import FastAPI
 import gradio as gr
 
-from modules import script_callbacks, shared
+from modules import scripts, script_callbacks, shared
 
 from stable_horde import StableHorde, StableHordeConfig
 
+basedir = scripts.basedir()
+
 async def start_horde():
-    config = StableHordeConfig()
+    config = StableHordeConfig(basedir)
     horde = StableHorde(config)
     await horde.run()
 

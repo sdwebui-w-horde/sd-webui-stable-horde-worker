@@ -19,8 +19,8 @@ safety_checker = None
 
 
 class StableHordeConfig:
-    def __init__(self):
-        pass
+    def __init__(self, basedir: str):
+        self.basedir = basedir
 
     @property
     def endpoint(self) -> str:
@@ -69,7 +69,7 @@ class StableHorde:
 
         self.session = aiohttp.ClientSession(self.config.endpoint, headers=headers)
 
-        self.sfw_request_censor = Image.open(path.join(scripts.basedir(), "assets", "nsfw_censor_sfw_request.png"))
+        self.sfw_request_censor = Image.open(path.join(self.config.basedir, "assets", "nsfw_censor_sfw_request.png"))
 
     async def run(self):
         while True:
