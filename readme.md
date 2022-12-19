@@ -2,9 +2,13 @@
 
 An unofficial [Stable Horde](https://stablehorde.net/) worker client as a [Stable Diffusion WebUI](https://github.com/AUTOMATIC1111/stable-diffusion-webui) extension.
 
-## WIP
+## Features
 
 **This extension is still WORKING IN PROGRESS**, and is not ready for production use.
+
+- Get jobs from Stable Horde, generate images and submit generations
+- Configurable interval between every jobs
+- Enable and disable extension whenever
 
 ## Install
 
@@ -24,4 +28,6 @@ Click the `Enable` checkbox to enable the Stable Horde worker client.
 
 ### Existing issues
 
-- `img2img` and `inpainting` is not supported yet
+- []model name should be typed by user manually](https://github.com/sdwebui-w-horde/sd-webui-stable-horde-worker/issues/2)
+- only one model is usable
+- []model should be selected manually](https://github.com/sdwebui-w-horde/sd-webui-stable-horde-worker/issues/3)
