@@ -181,10 +181,16 @@ class StableHorde:
             "do_not_save_grid": True,
         }
 
-        if req['payload'].get('source_image', None) is not None:
+        if req.get('source_image', None) is not None:
+            b64 = req.get('source_image')
+            image = Image.open(io.BytesIO(base64.b64decode(b64)))
+            mask = None
+            if req.get('source_mask', None) is not None:
+                b64 = req.get('source_mask')
+                mask = Image.open(io.BytesIO(base64.b64decode(b64)))
             p = img2img.StableDiffusionProcessingImg2Img(
-            init_images=[req["payload"]["source_image"]],
-            mask=req["payload"]["source_mask"],
+            init_images=[image],
+            mask=mask,
             **params,
         )
         else:
