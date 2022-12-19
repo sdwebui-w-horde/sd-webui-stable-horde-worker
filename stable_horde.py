@@ -1,6 +1,7 @@
 import asyncio
 import base64
 import io
+from os import path
 from random import randint
 from typing import Any, Dict, List, Optional
 
@@ -10,7 +11,7 @@ from diffusers.pipelines.stable_diffusion.safety_checker import StableDiffusionS
 from PIL import Image
 from transformers import AutoFeatureExtractor
 
-from modules import shared, call_queue, txt2img, img2img, processing, sd_samplers
+from modules import shared, call_queue, txt2img, img2img, processing, sd_samplers, scripts
 
 safety_model_id = "CompVis/stable-diffusion-safety-checker"
 safety_feature_extractor = None
@@ -67,6 +68,8 @@ class StableHorde:
         }
 
         self.session = aiohttp.ClientSession(self.config.endpoint, headers=headers)
+
+        self.sfw_request_censor = Image.open(path.join(scripts.basedir(), "assets", "nsfw_censor_sfw_request.png"))
 
     async def run(self):
         while True:
@@ -201,14 +204,16 @@ class StableHorde:
         with call_queue.queue_lock:
             processed = processing.process_images(p)
 
+            has_nsfw = False
+
             if req["payload"].get("use_nsfw_censor"):
                 x_image = np.array(processed.images[0])
-                x_checked_image, _ = self.check_safety(x_image)
-                image = Image.fromarray(x_checked_image)
+                image, has_nsfw = self.check_safety(x_image)
+
             else:
                 image = processed.images[0]
 
-            if "RealESRGAN_x4plus" in postprocessors:
+            if "RealESRGAN_x4plus" in postprocessors and not has_nsfw:
                 from modules.extras import run_extras
                 images, _info, _wtf = run_extras(
                     image=image, extras_mode=0, resize_mode=0,
@@ -273,9 +278,11 @@ class StableHorde:
             safety_checker = StableDiffusionSafetyChecker.from_pretrained(safety_model_id)
 
         safety_checker_input = safety_feature_extractor(x_image, return_tensors="pt")
-        x_checked_image, has_nsfw_concept = safety_checker(images=x_image, clip_input=safety_checker_input.pixel_values)
+        image, has_nsfw_concept = safety_checker(images=x_image, clip_input=safety_checker_input.pixel_values)
 
-        return x_checked_image, has_nsfw_concept
+        if has_nsfw_concept:
+            return self.sfw_request_censor, has_nsfw_concept
+        return Image.fromarray(image), has_nsfw_concept
 
 
     def handle_error(self, status: int, res: Dict[str, Any]):
