@@ -34,7 +34,7 @@ def on_ui_settings():
     shared.opts.add_option('stable_horde_enable', shared.OptionInfo(False, 'Enable', section=section))
     shared.opts.add_option('stable_horde_endpoint', shared.OptionInfo('https://stablehorde.net/', 'Endpoint', section=section))
     shared.opts.add_option('stable_horde_apikey', shared.OptionInfo('', 'API Key', section=section))
-    shared.opts.add_option('stable_horde_name', shared.OptionInfo('Stable Horde', 'Team Name', section=section))
+    shared.opts.add_option('stable_horde_name', shared.OptionInfo('Stable Horde', 'Worker Name', section=section))
     shared.opts.add_option('stable_horde_model', shared.OptionInfo('Anything Diffusion', 'Model', section=section))
     shared.opts.add_option('stable_horde_nsfw', shared.OptionInfo(False, 'NSFW', section=section))
     shared.opts.add_option('stable_horde_interval', shared.OptionInfo(10, 'Interval', section=section))
