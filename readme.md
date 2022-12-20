@@ -1,4 +1,6 @@
-# Stable Horde Worker Client for Stable Diffusion WebUI
+<h1 align="center">SD WebUI ❤️ Stable Horde</h1>
+
+## Stable Horde Worker Client for Stable Diffusion WebUI
 
 An unofficial [Stable Horde](https://stablehorde.net/) worker client as a [Stable Diffusion WebUI](https://github.com/AUTOMATIC1111/stable-diffusion-webui) extension.
 

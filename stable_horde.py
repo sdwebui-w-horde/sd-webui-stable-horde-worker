@@ -1,6 +1,7 @@
 import asyncio
 import base64
 import io
+import json
 from os import path
 from random import randint
 from typing import Any, Dict, List, Optional
@@ -11,7 +12,9 @@ from diffusers.pipelines.stable_diffusion.safety_checker import StableDiffusionS
 from PIL import Image
 from transformers import AutoFeatureExtractor
 
-from modules import shared, call_queue, txt2img, img2img, processing, sd_samplers, scripts
+from modules import shared, call_queue, txt2img, img2img, processing, sd_models, sd_samplers, scripts
+
+stable_horde_supported_models_url = "https://raw.githubusercontent.com/Sygil-Dev/nataili-model-reference/main/db.json"
 
 safety_model_id = "CompVis/stable-diffusion-safety-checker"
 safety_feature_extractor = None
@@ -24,10 +27,11 @@ class StableHordeConfig:
         self.enabled = False
         self.maintenance = False
 
+        self.models = []
+
         self.allow_img2img = True
         self.allow_painting = True
         self.allow_unsafe_ipaddr = True
-
 
     @property
     def endpoint(self) -> str:
@@ -40,10 +44,6 @@ class StableHordeConfig:
     @property
     def name(self) -> str:
         return shared.opts.stable_horde_name
-
-    @property
-    def models(self) -> List[str]:
-        return [shared.opts.stable_horde_model]
 
     @property
     def max_pixels(self) -> int:
@@ -65,7 +65,49 @@ class StableHorde:
 
         self.sfw_request_censor = Image.open(path.join(self.config.basedir, "assets", "nsfw_censor_sfw_request.png"))
 
+        self.supported_models = []
+
+    async def get_supported_models(self):
+        filepath = path.join(self.config.basedir, "stablehorde_supported_models.json")
+        if not path.exists(filepath):
+            async with aiohttp.ClientSession() as session:
+                async with session.get(stable_horde_supported_models_url) as resp:
+                    with open(filepath, 'wb') as f:
+                        f.write(await resp.read())
+        with open(filepath, 'r') as f:
+            supported_models: Dict[str, Any] = json.load(f)
+
+        self.supported_models = list(supported_models.values())
+
+    def detect_current_model(self):
+        def get_md5sum(filepath):
+            import hashlib
+            with open(filepath, "rb") as f:
+                return hashlib.md5(f.read()).hexdigest()
+
+        model_checkpoint = shared.opts.sd_model_checkpoint
+        checkpoint_info = sd_models.checkpoints_list.get(model_checkpoint, None)
+        if checkpoint_info is None:
+            raise Exception(f"Model checkpoint {model_checkpoint} not found")
+
+        local_hash = get_md5sum(checkpoint_info.filename)
+        for model in self.supported_models:
+            try:
+                remote_hash = model["config"]["files"][0]["md5sum"]
+            except KeyError:
+                continue
+
+            if local_hash == remote_hash:
+                self.config.models = [model["name"]]
+
+        if len(self.config.models) == 0:
+            raise Exception(f"Current model {model_checkpoint} not found on StableHorde")
+
+
     async def run(self):
+        await self.get_supported_models()
+        self.detect_current_model()
+
         while True:
             await asyncio.sleep(shared.opts.stable_horde_interval)
 
