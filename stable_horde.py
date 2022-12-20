@@ -21,6 +21,13 @@ safety_checker = None
 class StableHordeConfig:
     def __init__(self, basedir: str):
         self.basedir = basedir
+        self.enabled = False
+        self.maintenance = False
+
+        self.allow_img2img = True
+        self.allow_painting = True
+        self.allow_unsafe_ipaddr = True
+
 
     @property
     def endpoint(self) -> str:
@@ -46,19 +53,6 @@ class StableHordeConfig:
     def nsfw(self) -> bool:
         return shared.opts.stable_horde_nsfw
 
-    @property
-    def allow_img2img(self) -> bool:
-        return shared.opts.stable_horde_allow_img2img
-
-    @property
-    def allow_painting(self) -> bool:
-        return shared.opts.stable_horde_allow_painting
-
-    @property
-    def allow_unsafe_ipaddr(self) -> bool:
-        return shared.opts.stable_horde_allow_unsafe_ipaddr
-
-
 class StableHorde:
     def __init__(self, config: StableHordeConfig):
         self.config = config
@@ -75,7 +69,7 @@ class StableHorde:
         while True:
             await asyncio.sleep(shared.opts.stable_horde_interval)
 
-            if shared.opts.stable_horde_enable:
+            if self.config.enabled:
                 try:
                     req = await self.get_popped_request()
                     if req is None:
@@ -185,11 +179,11 @@ class StableHorde:
         }
 
         if req.get('source_image', None) is not None:
-            b64 = req.get('source_image')
+            b64: str = req.get('source_image')
             image = Image.open(io.BytesIO(base64.b64decode(b64)))
             mask = None
             if req.get('source_mask', None) is not None:
-                b64 = req.get('source_mask')
+                b64: str = req.get('source_mask')
                 mask = Image.open(io.BytesIO(base64.b64decode(b64)))
             p = img2img.StableDiffusionProcessingImg2Img(
             init_images=[image],
