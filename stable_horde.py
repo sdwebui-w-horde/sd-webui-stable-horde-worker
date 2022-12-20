@@ -3,7 +3,6 @@ import base64
 import io
 import json
 from os import path
-import os
 from random import randint
 from typing import Any, Dict, List, Optional
 
@@ -76,7 +75,7 @@ class StableHorde:
 
     async def get_supported_models(self):
         filepath = path.join(self.config.basedir, "stablehorde_supported_models.json")
-        if not os.path.exists(filepath):
+        if not path.exists(filepath):
             async with aiohttp.ClientSession() as session:
                 async with session.get(stable_horde_supported_models_url) as resp:
                     with open(filepath, 'wb') as f:
