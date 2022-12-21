@@ -33,6 +33,8 @@ class StableHordeConfig:
         self.allow_painting = True
         self.allow_unsafe_ipaddr = True
 
+        self.show_image_preview = False
+
     @property
     def endpoint(self) -> str:
         return shared.opts.stable_horde_endpoint

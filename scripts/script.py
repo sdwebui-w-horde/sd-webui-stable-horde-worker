@@ -73,8 +73,10 @@ def on_ui_tabs():
                     model_selection = gr.CheckboxGroup(choices=shared.list_checkpoint_tiles(), value=[shared.list_checkpoint_tiles()[0]], label='Model Selection')
 
             with gr.Column():
-                show_images = gr.Checkbox(False, label='Show Images')
-                preview = gr.Image(elem_id=tabprefix + 'preview', visible=False)
+                show_images = gr.Checkbox(config.show_image_preview, label='Show Images')
+                show_images.change(fn=lambda value: config.__setattr__("show_image_preview", value))
+
+                preview = gr.Image(elem_id=tabprefix + 'preview', readonly=True)
                 with gr.Row():
                     log = gr.Textbox(elem_id=tabprefix + 'log', lines=10, width=400, height=400, readonly=True)
 
