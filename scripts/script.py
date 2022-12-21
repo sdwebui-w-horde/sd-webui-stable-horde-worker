@@ -41,7 +41,7 @@ def on_ui_settings():
 
 
 def on_ui_tabs():
-    tabprefix = 'stable-horde-'
+    tab_prefix = 'stable-horde-'
     with gr.Blocks() as demo:
         with gr.Row():
             with gr.Column():
@@ -49,7 +49,7 @@ def on_ui_tabs():
                     def enable_text():
                         return 'Disable' if config.enabled else 'Enable'
 
-                    button = gr.Button(enable_text(), variant='primary', elem_id=tabprefix + 'enable')
+                    button = gr.Button(enable_text(), variant='primary', elem_id=tab_prefix + 'enable')
 
                     def on_enable():
                         config.enabled = not config.enabled
@@ -76,9 +76,9 @@ def on_ui_tabs():
                 show_images = gr.Checkbox(config.show_image_preview, label='Show Images')
                 show_images.change(fn=lambda value: config.__setattr__("show_image_preview", value))
 
-                preview = gr.Image(elem_id=tabprefix + 'preview', readonly=True)
+                preview = gr.Image(elem_id=tab_prefix + 'preview', readonly=True)
                 with gr.Row():
-                    log = gr.Textbox(elem_id=tabprefix + 'log', lines=10, width=400, height=400, readonly=True)
+                    log = gr.Textbox(elem_id=tab_prefix + 'log', lines=10, width=400, height=400, readonly=True)
 
     return (demo, 'Stable Horde', 'stable-horde'),
 
