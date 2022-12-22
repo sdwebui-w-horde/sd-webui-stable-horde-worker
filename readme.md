@@ -1,9 +1,14 @@
 <p align="center">
   <img src="./image.png" width="256px"></img>
 </p>
-<h1 align="center">SD WebUI ❤️ Stable Horde</h1>
 
-*Stable Horde Worker Client for Stable Diffusion WebUI*
+<div align="center">
+
+# SD WebUI ❤️ Stable Horde
+
+✨ *Stable Horde Worker Client for Stable Diffusion WebUI* ✨
+
+</div>
 
 An unofficial [Stable Horde](https://stablehorde.net/) worker client as a [Stable Diffusion WebUI](https://github.com/AUTOMATIC1111/stable-diffusion-webui) extension.
 
