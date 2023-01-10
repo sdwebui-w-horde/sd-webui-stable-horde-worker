@@ -4,13 +4,13 @@ import io
 import json
 from os import path
 from random import randint
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 import aiohttp
 import numpy as np
 from diffusers.pipelines.stable_diffusion.safety_checker import StableDiffusionSafetyChecker
 from PIL import Image
-from transformers import AutoFeatureExtractor
+from transformers.models.auto.feature_extraction_auto import AutoFeatureExtractor
 
 from modules import shared, call_queue, txt2img, img2img, processing, sd_models, sd_samplers, scripts
 
@@ -223,11 +223,11 @@ class StableHorde:
         }
 
         if req.get('source_image', None) is not None:
-            b64: str = req.get('source_image')
+            b64: str = req.get('source_image', '')
             image = Image.open(io.BytesIO(base64.b64decode(b64)))
             mask = None
             if req.get('source_mask', None) is not None:
-                b64: str = req.get('source_mask')
+                b64: str = req.get('source_mask', '')
                 mask = Image.open(io.BytesIO(base64.b64decode(b64)))
             p = img2img.StableDiffusionProcessingImg2Img(
             init_images=[image],
@@ -274,7 +274,7 @@ class StableHorde:
 
         if req.get("r2_upload"):
             async with aiohttp.ClientSession() as session:
-                await session.put(req.get("r2_upload"), data=bytesio.getvalue())
+                await session.put(req.get("r2_upload", ''), data=bytesio.getvalue())
             generation = "R2"
 
         else:
