@@ -157,7 +157,7 @@ class StableHorde:
             "nsfw": self.config.nsfw,
             "blacklist": [],
             "models": self.config.models,
-            "bridge_version": 8,
+            "bridge_version": 9,
             "threads": 1,
             "max_pixels": self.config.max_pixels,
             "allow_img2img": self.config.allow_img2img,
@@ -203,6 +203,15 @@ class StableHorde:
             negative = ""
 
         postprocessors = req['payload'].get('post_processing', None) or []
+        restore_faces = False
+        if "GFPGAN" in postprocessors:
+            restore_faces = True
+            shared.opts.face_restoration_model = "GFPGAN"
+            shared.opts.save(shared.config_filename)
+        elif "CodeFormers" in postprocessors:
+            restore_faces = True
+            shared.opts.face_restoration_model = "CodeFormer"
+            shared.opts.save(shared.config_filename)
 
         params = {
             "sd_model": shared.sd_model,
@@ -217,7 +226,7 @@ class StableHorde:
             "subseed": req['payload'].get('seed_variation', 1),
             "steps": req['payload']['ddim_steps'],
             "n_iter": req['payload']['n_iter'],
-            "restore_faces": "GFPGAN" in postprocessors,
+            "restore_faces": restore_faces,
             "do_not_save_samples": True,
             "do_not_save_grid": True,
         }
