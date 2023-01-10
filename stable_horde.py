@@ -58,16 +58,14 @@ class StableHordeConfig:
 class StableHorde:
     def __init__(self, config: StableHordeConfig):
         self.config = config
-        headers = {
-            "apikey": self.config.apikey,
-            "Content-Type": "application/json",
-        }
 
-        self.session = aiohttp.ClientSession(self.config.endpoint, headers=headers)
+        self.session: Optional[aiohttp.ClientSession] = None
 
         self.sfw_request_censor = Image.open(path.join(self.config.basedir, "assets", "nsfw_censor_sfw_request.png"))
 
         self.supported_models = []
+
+        self.current_image: Optional[Image.Image] = None
 
     async def get_supported_models(self):
         filepath = path.join(self.config.basedir, "stablehorde_supported_models.json")
@@ -107,6 +105,12 @@ class StableHorde:
 
 
     async def run(self):
+        if self.session is None:
+            headers = {
+                "apikey": self.config.apikey,
+                "Content-Type": "application/json",
+            }
+            self.session = aiohttp.ClientSession(self.config.endpoint, headers=headers)
         await self.get_supported_models()
         self.detect_current_model()
 
@@ -275,6 +279,8 @@ class StableHorde:
                 )
 
                 image = images[0]
+
+            self.current_image = image
 
         shared.state.end()
 

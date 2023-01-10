@@ -9,16 +9,16 @@ from stable_horde import StableHorde, StableHordeConfig
 
 basedir = scripts.basedir()
 config = StableHordeConfig(basedir)
+horde = StableHorde(config)
 
-async def start_horde(config: StableHordeConfig):
-    horde = StableHorde(config)
+async def start_horde():
     await horde.run()
 
 
 def on_app_started(demo: Optional[gr.Blocks], app: FastAPI):
     @app.get('/stable-horde')
     async def stable_horde():
-        await start_horde(config)
+        await start_horde()
 
     import requests
     if demo is None:
@@ -43,18 +43,16 @@ def on_ui_settings():
 def on_ui_tabs():
     tab_prefix = 'stable-horde-'
     with gr.Blocks() as demo:
-        with gr.Row():
+        with gr.Row(elem_id='stable-horde'):
             with gr.Column():
                 with gr.Row():
-                    def enable_text():
-                        return 'Disable' if config.enabled else 'Enable'
+                    enable = gr.Button('Enable', variant='primary', elem_id=tab_prefix + 'enable')
+                    disable = gr.Button('Disable', elem_id=tab_prefix + 'disable')
 
-                    button = gr.Button(enable_text(), variant='primary', elem_id=tab_prefix + 'enable')
-
-                    def on_enable():
-                        config.enabled = not config.enabled
-                        button.label = enable_text()
-                    button.click(fn=on_enable)
+                    def on_enable(enable: str):
+                        config.enabled = enable == 'Enable'
+                    enable.click(fn=on_enable, inputs=[enable], outputs=[], _js='toggleEnable', show_progress=False)
+                    disable.click(fn=on_enable, inputs=[disable], outputs=[], _js='toggleDisable', show_progress=False)
 
                     maintenance_mode = gr.Checkbox(config.maintenance, label='Maintenance Mode')
                     maintenance_mode.change(fn=lambda value: config.__setattr__("maintenance", value))
@@ -76,7 +74,14 @@ def on_ui_tabs():
                 show_images = gr.Checkbox(config.show_image_preview, label='Show Images')
                 show_images.change(fn=lambda value: config.__setattr__('show_image_preview', value))
 
-                preview = gr.Image(elem_id=tab_prefix + 'preview', readonly=True)
+                refresh = gr.Button('Refresh', visible=False, elem_id=tab_prefix + 'refresh')
+
+                preview = gr.Gallery(elem_id=tab_prefix + 'preview', readonly=True)
+                def on_refresh():
+                    print(horde.current_image)
+                    return [horde.current_image] if horde.current_image is not None else []
+
+                refresh.click(fn=on_refresh, outputs=[preview], show_progress=False)
                 with gr.Row():
                     log = gr.Textbox(elem_id=tab_prefix + 'log', lines=10, width=400, height=400, readonly=True)
 
