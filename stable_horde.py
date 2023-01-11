@@ -27,6 +27,7 @@ class StableHordeConfig(object):
     endpoint: str
     apikey: str
     name: str
+    interval: int
     max_pixels: int
     nsfw: bool
     allow_img2img: bool
@@ -60,6 +61,7 @@ class StableHordeConfig(object):
                 "endpoint": "https://stablehorde.net/",
                 "apikey": "00000000",
                 "name": "",
+                "interval": 10,
                 "max_pixels": 1048576,
                 "nsfw": False,
             }
@@ -166,7 +168,7 @@ class StableHorde:
         self.detect_current_model()
 
         while True:
-            await asyncio.sleep(shared.opts.stable_horde_interval)
+            await asyncio.sleep(self.config.interval)
 
             if self.config.enabled:
                 try:

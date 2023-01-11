@@ -29,12 +29,13 @@ def on_app_started(demo: Optional[gr.Blocks], app: FastAPI):
     requests.get(f'{local_url}stable-horde')
 
 
-def apply_stable_horde_settings(enable: bool, maintenance_mode: bool, allow_img2img: bool, allow_painting: bool, allow_unsafe_ipaddr: bool, model_selection: list, show_images: bool):
+def apply_stable_horde_settings(enable: bool, maintenance_mode: bool, allow_img2img: bool, allow_painting: bool, allow_unsafe_ipaddr: bool, interval: int, model_selection: list, show_images: bool):
     config.enabled = enable
     config.maintenance = maintenance_mode
     config.allow_img2img = allow_img2img
     config.allow_painting = allow_painting
     config.allow_unsafe_ipaddr = allow_unsafe_ipaddr
+    config.interval = interval
     config.show_image_preview = show_images
     config.save()
 
@@ -62,6 +63,7 @@ def on_ui_tabs():
                         allow_img2img = gr.Checkbox(True, label='Allow img2img')
                         allow_painting = gr.Checkbox(True, label='Allow Painting')
                         allow_unsafe_ipaddr = gr.Checkbox(True, label='Allow Unsafe IP Address')
+                        interval = gr.Slider(0, 60, config.interval, step=1, label='Duration Between Generations (seconds)')
 
                     with gr.Row():
                         model_selection = gr.CheckboxGroup(choices=shared.list_checkpoint_tiles(), value=[shared.list_checkpoint_tiles()[0]], label='Model Selection')
@@ -96,6 +98,7 @@ def on_ui_tabs():
                 allow_img2img,
                 allow_painting,
                 allow_unsafe_ipaddr,
+                interval,
                 model_selection,
                 show_images,
             ],
