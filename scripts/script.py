@@ -85,7 +85,7 @@ def on_ui_tabs():
                     refresh_image = gr.Button('Refresh Image', visible=False, elem_id=tab_prefix + 'refresh-image')
 
                     current_id = gr.Textbox('Current ID: ', label='', elem_id=tab_prefix + 'current-id', readonly=True)
-                    preview = gr.Gallery(elem_id=tab_prefix + 'preview', visible=config.show_image_preview, readonly=True)
+                    preview = gr.Gallery(elem_id=tab_prefix + 'preview', visible=config.show_image_preview, readonly=True).style(grid=4)
 
                     def on_refresh(image=False, show_images=config.show_image_preview):
                         cid = f"Current ID: {horde.state.id}"
