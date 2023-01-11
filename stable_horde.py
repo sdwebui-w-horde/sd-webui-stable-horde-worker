@@ -12,7 +12,7 @@ from diffusers.pipelines.stable_diffusion.safety_checker import StableDiffusionS
 from PIL import Image
 from transformers.models.auto.feature_extraction_auto import AutoFeatureExtractor
 
-from modules import shared, call_queue, txt2img, img2img, processing, sd_models, sd_samplers, scripts
+from modules import shared, call_queue, txt2img, img2img, processing, sd_models, sd_samplers
 
 stable_horde_supported_models_url = "https://raw.githubusercontent.com/Sygil-Dev/nataili-model-reference/main/db.json"
 
@@ -21,41 +21,76 @@ safety_feature_extractor = None
 safety_checker = None
 
 
-class StableHordeConfig:
-    def __init__(self):
-        self.enabled = False
-        self.maintenance = False
+class StableHordeConfig(object):
+    enabled: bool
+    maintenance: bool
+    endpoint: str
+    apikey: str
+    name: str
+    max_pixels: int
+    nsfw: bool
+    allow_img2img: bool
+    allow_painting: bool
+    allow_unsafe_ipaddr: bool
+    show_image_preview: bool
 
-        self.allow_img2img = True
-        self.allow_painting = True
-        self.allow_unsafe_ipaddr = True
+    def __init__(self, basedir: str):
+        self.basedir = basedir
+        self.config = self.load()
 
-        self.show_image_preview = False
+    def __getattr__(self, item: str):
+        return self.config.get(item, None)
 
-    @property
-    def endpoint(self) -> str:
-        return shared.opts.stable_horde_endpoint
-        
-    @property
-    def apikey(self) -> str:
-        return shared.opts.stable_horde_apikey
+    def __setattr__(self, key: str, value: Any):
+        if key == "config" or key == "basedir":
+            super().__setattr__(key, value)
+        else:
+            self.config[key] = value
+            self.save()
 
-    @property
-    def name(self) -> str:
-        return shared.opts.stable_horde_name
+    def load(self):
+        if not path.exists(path.join(self.basedir, "config.json")):
+            self.config = {
+                "enabled": False,
+                "maintenance": False,
+                "allow_img2img": True,
+                "allow_painting": True,
+                "allow_unsafe_ipaddr": True,
+                "show_image_preview": False,
+                "endpoint": "https://stablehorde.net/",
+                "apikey": "00000000",
+                "name": "",
+                "max_pixels": 1048576,
+                "nsfw": False,
+            }
+            self.save()
 
-    @property
-    def max_pixels(self) -> int:
-        return int(shared.opts.stable_horde_max_pixels)
+        with open(path.join(self.basedir, "config.json"), "r") as f:
+            return json.load(f)
 
-    @property
-    def nsfw(self) -> bool:
-        return shared.opts.stable_horde_nsfw
+    def save(self):
+        with open(path.join(self.basedir, "config.json"), "w") as f:
+            json.dump(self.config, f, indent=2)
+
 
 class State:
     def __init__(self):
         self.id: Optional[str] = None
+        self.prompt: Optional[str] = None
+        self.negative_prompt: Optional[str] = None
+        self.scale: Optional[float] = None
+        self.steps: Optional[int] = None
+        self.sampler: Optional[str] = None
         self.image: Optional[Image.Image] = None
+
+    def to_dict(self):
+        return {
+            "prompt": self.prompt,
+            "negative_prompt": self.negative_prompt,
+            "scale": self.scale,
+            "steps": self.steps,
+            "sampler": self.sampler,
+        }
 
 class StableHorde:
     def __init__(self, basedir: str, config: StableHordeConfig):
@@ -206,7 +241,7 @@ class StableHorde:
 
         prompt = req['payload'].get('prompt', '')
         if "###" in prompt:
-            prompt, negative = prompt.split("###")
+            prompt, negative = map(lambda x: x.strip(), prompt.split("###"))
         else:
             negative = ""
 
@@ -223,8 +258,8 @@ class StableHorde:
 
         params = {
             "sd_model": shared.sd_model,
-            "prompt": prompt.strip(),
-            "negative_prompt": negative.strip(),
+            "prompt": prompt,
+            "negative_prompt": negative,
             "sampler_name": sampler,
             "cfg_scale": req['payload'].get('cfg_scale', 5.0),
             "seed": req['payload'].get('seed', randint(0, 2**32)),
@@ -285,6 +320,11 @@ class StableHorde:
                 image = images[0]
 
             self.state.id = req['id']
+            self.state.prompt = prompt
+            self.state.negative_prompt = negative
+            self.state.scale = req['payload'].get('cfg_scale', 5.0)
+            self.state.steps = req['payload']['ddim_steps']
+            self.state.sampler = sampler_name
             self.state.image = image
 
         shared.state.end()
