@@ -29,64 +29,78 @@ def on_app_started(demo: Optional[gr.Blocks], app: FastAPI):
     requests.get(f'{local_url}stable-horde')
 
 
+def apply_stable_horde_settings(enable: bool, maintenance_mode: bool, allow_img2img: bool, allow_painting: bool, allow_unsafe_ipaddr: bool, model_selection: list, show_images: bool):
+    config.enabled = enable
+    config.maintenance = maintenance_mode
+    config.allow_img2img = allow_img2img
+    config.allow_painting = allow_painting
+    config.allow_unsafe_ipaddr = allow_unsafe_ipaddr
+    config.show_image_preview = show_images
+    config.save()
+
+    horde.config = config
+
+    return f'Status: {"Running" if config.enabled else "Stopped"}', 'Running Type: Image Generation'
+
+
 def on_ui_tabs():
     tab_prefix = 'stable-horde-'
     with gr.Blocks() as demo:
-        with gr.Row(elem_id='stable-horde').style(equal_height=False):
-            with gr.Column():
-                with gr.Row():
-                    enable = gr.Button('Enable', visible=not config.enabled, variant='primary', elem_id=tab_prefix + 'enable', _js='stableHordeStartTimer')
-                    disable = gr.Button('Disable', visible=config.enabled, elem_id=tab_prefix + 'disable', _js='stableHordeStopTimer')
+        with gr.Column(elem_id='stable-horde'):
+            with gr.Row():
+                status = gr.Textbox(f'Status: {"Running" if config.enabled else "Stopped"}', label='', elem_id=tab_prefix + 'status', readonly=True)
+                running_type = gr.Textbox('Running Type: Image Generation', label='', elem_id=tab_prefix + 'running-type', readonly=True)
 
-                    def on_enable(enable: bool):
-                        config.enabled = enable
-                        return gr.update(visible=not enable), gr.update(visible=enable)
-                    enable.click(fn=lambda: on_enable(True), inputs=[], outputs=[enable, disable], show_progress=False)
-                    disable.click(fn=lambda: on_enable(False), inputs=[], outputs=[enable, disable],  show_progress=False)
+                apply_settings = gr.Button('Apply Settings', elem_id=tab_prefix + 'apply-settings')
+            with gr.Row():
+                state = gr.Textbox('', label='', readonly=True)
+            with gr.Row().style(equal_height=False):
+                with gr.Column():
+                    with gr.Box(scale=2):
+                        enable = gr.Checkbox(config.enabled, label='Enable', elem_id=tab_prefix + 'enable')
+                        maintenance_mode = gr.Checkbox(config.maintenance, label='Maintenance Mode')
+                        allow_img2img = gr.Checkbox(True, label='Allow img2img')
+                        allow_painting = gr.Checkbox(True, label='Allow Painting')
+                        allow_unsafe_ipaddr = gr.Checkbox(True, label='Allow Unsafe IP Address')
 
-                    maintenance_mode = gr.Checkbox(config.maintenance, label='Maintenance Mode')
-                    maintenance_mode.change(fn=lambda value: config.__setattr__("maintenance", value))
+                    with gr.Row():
+                        model_selection = gr.CheckboxGroup(choices=shared.list_checkpoint_tiles(), value=[shared.list_checkpoint_tiles()[0]], label='Model Selection')
 
-                with gr.Column(scale=2):
-                    allow_img2img = gr.Checkbox(True, label='Allow img2img')
-                    allow_img2img.change(fn=lambda value: config.__setattr__("allow_img2img", value))
+                with gr.Column():
+                    show_images = gr.Checkbox(config.show_image_preview, label='Show Images')
 
-                    allow_painting = gr.Checkbox(True, label='Allow Painting')
-                    allow_painting.change(fn=lambda value: config.__setattr__("allow_painting", value))
+                    refresh = gr.Button('Refresh', visible=False, elem_id=tab_prefix + 'refresh')
+                    refresh_image = gr.Button('Refresh Image', visible=False, elem_id=tab_prefix + 'refresh-image')
 
-                    allow_unsafe_ipaddr = gr.Checkbox(True, label='Allow Unsafe IP Address')
-                    allow_unsafe_ipaddr.change(fn=lambda value: config.__setattr__("allow_unsafe_ipaddr", value))
+                    current_id = gr.Textbox('Current ID: ', label='', elem_id=tab_prefix + 'current-id', readonly=True)
+                    preview = gr.Gallery(elem_id=tab_prefix + 'preview', visible=config.show_image_preview, readonly=True)
 
-                with gr.Row():
-                    model_selection = gr.CheckboxGroup(choices=shared.list_checkpoint_tiles(), value=[shared.list_checkpoint_tiles()[0]], label='Model Selection')
+                    def on_refresh(image=False, show_images=config.show_image_preview):
+                        cid = f"Current ID: {horde.state.id}"
+                        html = ''.join(map(lambda x: f'<p>{x[0]}: {x[1]}</p>', horde.state.to_dict().items()))
+                        images = [horde.state.image] if horde.state.image is not None else []
+                        if image and show_images:
+                            return cid, html, horde.state.status, images
+                        return cid, html, horde.state.status
 
-            with gr.Column():
-                show_images = gr.Checkbox(config.show_image_preview, label='Show Images')
+                    with gr.Row():
+                        log = gr.HTML(elem_id=tab_prefix + 'log')
 
-                refresh = gr.Button('Refresh', visible=False, elem_id=tab_prefix + 'refresh')
-                refresh_image = gr.Button('Refresh Image', visible=False, elem_id=tab_prefix + 'refresh-image')
-
-                current_id = gr.Textbox('Current ID: ', label='', elem_id=tab_prefix + 'current-id', readonly=True)
-                preview = gr.Gallery(elem_id=tab_prefix + 'preview', visible=config.show_image_preview, readonly=True)
-
-                def on_show_images(value: bool):
-                    config.show_image_preview = value
-                    return gr.update(visible=value)
-
-                def on_refresh(image=False, show_images=config.show_image_preview):
-                    cid = f"Current ID: {horde.state.id}"
-                    html = ''.join(map(lambda x: f'<p>{x[0]}: {x[1]}</p>', horde.state.to_dict().items()))
-                    images = [horde.state.image] if horde.state.image is not None else []
-                    if image and show_images:
-                        return cid, html, images
-                    return cid, html
-
-                show_images.change(fn=on_show_images, inputs=[show_images], outputs=[preview])
-                with gr.Row():
-                    log = gr.HTML(elem_id=tab_prefix + 'log')
-
-                refresh.click(fn=lambda: on_refresh(), outputs=[current_id, log], show_progress=False)
-                refresh_image.click(fn=lambda: on_refresh(True), outputs=[current_id, log, preview], show_progress=False)
+                    refresh.click(fn=lambda: on_refresh(), outputs=[current_id, log, state], show_progress=False)
+                    refresh_image.click(fn=lambda: on_refresh(True), outputs=[current_id, log, state, preview], show_progress=False)
+        apply_settings.click(
+            fn=apply_stable_horde_settings,
+            inputs=[
+                enable,
+                maintenance_mode,
+                allow_img2img,
+                allow_painting,
+                allow_unsafe_ipaddr,
+                model_selection,
+                show_images,
+            ],
+            outputs=[status, running_type],
+        )
 
     return (demo, 'Stable Horde Worker', 'stable-horde'),
 

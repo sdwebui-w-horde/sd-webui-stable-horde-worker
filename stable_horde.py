@@ -75,6 +75,7 @@ class StableHordeConfig(object):
 
 class State:
     def __init__(self):
+        self._status = ''
         self.id: Optional[str] = None
         self.prompt: Optional[str] = None
         self.negative_prompt: Optional[str] = None
@@ -83,8 +84,19 @@ class State:
         self.sampler: Optional[str] = None
         self.image: Optional[Image.Image] = None
 
+    @property
+    def status(self):
+        return self._status
+
+    @status.setter
+    def status(self, value):
+        self._status = value
+        if shared.cmd_opts.nowebui:
+            print(value)
+
     def to_dict(self):
         return {
+            "status": self.status,
             "prompt": self.prompt,
             "negative_prompt": self.negative_prompt,
             "scale": self.scale,
@@ -225,12 +237,12 @@ class StableHorde:
 
         self.patch_sampler_names()
 
-        print(f"Get popped generation request {req['id']}: {req['payload'].get('prompt', '')}")
+        self.state.status = f"Get popped generation request {req['id']}: {req['payload'].get('prompt', '')}"
         sampler_name = req['payload']['sampler_name']
         if sampler_name == 'k_dpm_adaptive':
             sampler_name = 'k_dpm_ad'
         if sampler_name not in sd_samplers.samplers_map:
-            print(f"ERROR: Unknown sampler {sampler_name}")
+            self.state.status = f"ERROR: Unknown sampler {sampler_name}"
             return
         if req['payload']['karras']:
             sampler_name += '_ka'
@@ -360,9 +372,9 @@ class StableHorde:
         }
         """
         if (r.status == 200 and res.get("reward") is not None):
-            print(f"Submission accepted, reward {res['reward']} received.")
+            self.state.status = f"Submission accepted, reward {res['reward']} received."
         elif (r.status == 400):
-            print("ERROR: Generation Already Submitted")
+            self.state.status = "ERROR: Generation Already Submitted"
         else:
             self.handle_error(r.status, res)
 
@@ -385,11 +397,11 @@ class StableHorde:
 
     def handle_error(self, status: int, res: Dict[str, Any]):
         if status == 401:
-            print("ERROR: Invalid API Key")
+            self.state.status = "ERROR: Invalid API Key"
         elif status == 403:
-            print(f"ERROR: Access Denied. ({res.get('message', '')})")
+            self.state.status = f"ERROR: Access Denied. ({res.get('message', '')})"
         elif status == 404:
-            print("ERROR: Request Not Found")
+            self.state.status = "ERROR: Request Not Found"
         else:
-            print(f"ERROR: Unknown Error {status}")
-            print(res)
+            self.state.status = f"ERROR: Unknown Error {status}"
+            print(f"ERROR: Unknown Error, {res}")

@@ -23,3 +23,5 @@ function stableHordeStopTimer() {
     globalHordeTimer = null
   }
 }
+
+stableHordeStartTimer()
