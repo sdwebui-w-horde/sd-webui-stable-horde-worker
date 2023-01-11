@@ -88,7 +88,7 @@ def on_ui_tabs():
                 refresh.click(fn=lambda: on_refresh(), outputs=[current_id, log], show_progress=False)
                 refresh_image.click(fn=lambda: on_refresh(True), outputs=[current_id, log, preview], show_progress=False)
 
-    return (demo, 'Stable Horde', 'stable-horde'),
+    return (demo, 'Stable Horde Worker', 'stable-horde'),
 
 
 script_callbacks.on_app_started(on_app_started)
