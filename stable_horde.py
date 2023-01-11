@@ -26,8 +26,6 @@ class StableHordeConfig:
         self.enabled = False
         self.maintenance = False
 
-        self.models = []
-
         self.allow_img2img = True
         self.allow_painting = True
         self.allow_unsafe_ipaddr = True
@@ -69,6 +67,7 @@ class StableHorde:
         self.sfw_request_censor = Image.open(path.join(self.basedir, "assets", "nsfw_censor_sfw_request.png"))
 
         self.supported_models = []
+        self.current_models = []
 
         self.state = State()
 
@@ -103,9 +102,9 @@ class StableHorde:
                 continue
 
             if local_hash == remote_hash:
-                self.config.models = [model["name"]]
+                self.current_models = [model["name"]]
 
-        if len(self.config.models) == 0:
+        if len(self.current_models) == 0:
             raise Exception(f"Current model {model_checkpoint} not found on StableHorde")
 
 
@@ -165,7 +164,7 @@ class StableHorde:
             "priority_usernames": [],
             "nsfw": self.config.nsfw,
             "blacklist": [],
-            "models": self.config.models,
+            "models": self.current_models,
             "bridge_version": 9,
             "threads": 1,
             "max_pixels": self.config.max_pixels,
