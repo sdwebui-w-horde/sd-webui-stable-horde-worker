@@ -29,13 +29,18 @@ def on_app_started(demo: Optional[gr.Blocks], app: FastAPI):
     requests.get(f'{local_url}stable-horde')
 
 
-def apply_stable_horde_settings(enable: bool, maintenance_mode: bool, allow_img2img: bool, allow_painting: bool, allow_unsafe_ipaddr: bool, interval: int, model_selection: list, show_images: bool):
+def apply_stable_horde_settings(enable: bool, maintenance_mode: bool, name: str, apikey: str, allow_img2img: bool, allow_painting: bool, allow_unsafe_ipaddr: bool, nsfw: bool, interval: int, max_pixels: str, endpoint: str, model_selection: list, show_images: bool):
     config.enabled = enable
     config.maintenance = maintenance_mode
     config.allow_img2img = allow_img2img
     config.allow_painting = allow_painting
     config.allow_unsafe_ipaddr = allow_unsafe_ipaddr
     config.interval = interval
+    config.endpoint = endpoint
+    config.apikey = apikey
+    config.name = name
+    config.max_pixels = int(max_pixels)
+    config.nsfw = nsfw
     config.show_image_preview = show_images
     config.save()
 
@@ -60,10 +65,15 @@ def on_ui_tabs():
                     with gr.Box(scale=2):
                         enable = gr.Checkbox(config.enabled, label='Enable', elem_id=tab_prefix + 'enable')
                         maintenance_mode = gr.Checkbox(config.maintenance, label='Maintenance Mode')
+                        name = gr.Textbox(config.name, label='Worker Name', elem_id=tab_prefix + 'name')
+                        apikey = gr.Textbox(config.apikey, label='Stable Horde API Key', elem_id=tab_prefix + 'apikey')
                         allow_img2img = gr.Checkbox(True, label='Allow img2img')
                         allow_painting = gr.Checkbox(True, label='Allow Painting')
                         allow_unsafe_ipaddr = gr.Checkbox(True, label='Allow Unsafe IP Address')
+                        nsfw = gr.Checkbox(config.nsfw, label='Allow NSFW')
                         interval = gr.Slider(0, 60, config.interval, step=1, label='Duration Between Generations (seconds)')
+                        max_pixels = gr.Textbox(str(config.max_pixels), label='Max Pixels', elem_id=tab_prefix + 'max-pixels')
+                        endpoint = gr.Textbox(config.endpoint, label='Stable Horde Endpoint', elem_id=tab_prefix + 'endpoint')
 
                     with gr.Row():
                         model_selection = gr.CheckboxGroup(choices=shared.list_checkpoint_tiles(), value=[shared.list_checkpoint_tiles()[0]], label='Model Selection')
@@ -95,10 +105,15 @@ def on_ui_tabs():
             inputs=[
                 enable,
                 maintenance_mode,
+                name,
+                apikey,
                 allow_img2img,
                 allow_painting,
                 allow_unsafe_ipaddr,
+                nsfw,
                 interval,
+                max_pixels,
+                endpoint,
                 model_selection,
                 show_images,
             ],
