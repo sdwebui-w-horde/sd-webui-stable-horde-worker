@@ -22,8 +22,7 @@ safety_checker = None
 
 
 class StableHordeConfig:
-    def __init__(self, basedir: str):
-        self.basedir = basedir
+    def __init__(self):
         self.enabled = False
         self.maintenance = False
 
@@ -55,20 +54,26 @@ class StableHordeConfig:
     def nsfw(self) -> bool:
         return shared.opts.stable_horde_nsfw
 
+class State:
+    def __init__(self):
+        self.id: Optional[str] = None
+        self.image: Optional[Image.Image] = None
+
 class StableHorde:
-    def __init__(self, config: StableHordeConfig):
+    def __init__(self, basedir: str, config: StableHordeConfig):
+        self.basedir = basedir
         self.config = config
 
         self.session: Optional[aiohttp.ClientSession] = None
 
-        self.sfw_request_censor = Image.open(path.join(self.config.basedir, "assets", "nsfw_censor_sfw_request.png"))
+        self.sfw_request_censor = Image.open(path.join(self.basedir, "assets", "nsfw_censor_sfw_request.png"))
 
         self.supported_models = []
 
-        self.current_image: Optional[Image.Image] = None
+        self.state = State()
 
     async def get_supported_models(self):
-        filepath = path.join(self.config.basedir, "stablehorde_supported_models.json")
+        filepath = path.join(self.basedir, "stablehorde_supported_models.json")
         if not path.exists(filepath):
             async with aiohttp.ClientSession() as session:
                 async with session.get(stable_horde_supported_models_url) as resp:
@@ -280,7 +285,8 @@ class StableHorde:
 
                 image = images[0]
 
-            self.current_image = image
+            self.state.id = req['id']
+            self.state.image = image
 
         shared.state.end()
 

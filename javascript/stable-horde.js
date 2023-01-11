@@ -1,32 +1,23 @@
-var globalHordeTimer
+let globalHordeTimer
+let globalHordeCurrentId
 
-function toggle(enable) {
-  const enableBtn = gradioApp().querySelector('#stable-horde #stable-horde-enable')
-  const disableBtn = gradioApp().querySelector('#stable-horde #stable-horde-disable')
-  if (enable && enableBtn) {
-    enableBtn.style.display = 'none'
-    disableBtn.style.display = 'flex'
-  }
-  if (!enable && disableBtn) {
-    disableBtn.style.display = 'none'
-    enableBtn.style.display = 'flex'
-  }
-}
-
-function toggleEnable() {
-  toggle(true)
+function stableHordeStartTimer() {
   if (!globalHordeTimer) {
     globalHordeTimer = setInterval(() => {
-      const hordeBtn = gradioApp().querySelector('#stable-horde #stable-horde-refresh')
-      if (hordeBtn) {
-        hordeBtn.click()
+      const currentId = gradioApp().querySelector('#stable-horde #stable-horde-current-id textarea')?.value
+      const refreshBtn = gradioApp().querySelector('#stable-horde #stable-horde-refresh')
+      if (refreshBtn) {
+        refreshBtn.click()
+      }
+      if (currentId !== globalHordeCurrentId) {
+        globalHordeCurrentId = currentId
+        gradioApp().querySelector('#stable-horde #stable-horde-refresh-image').click()
       }
     }, 1000)
   }
 }
 
-function toggleDisable() {
-  toggle(false)
+function stableHordeStopTimer() {
   if (globalHordeTimer) {
     clearInterval(globalHordeTimer)
     globalHordeTimer = null
