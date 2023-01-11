@@ -29,12 +29,12 @@ def on_app_started(demo: Optional[gr.Blocks], app: FastAPI):
     requests.get(f'{local_url}stable-horde')
 
 
-def apply_stable_horde_settings(enable: bool, maintenance_mode: bool, name: str, apikey: str, allow_img2img: bool, allow_painting: bool, allow_unsafe_ipaddr: bool, nsfw: bool, interval: int, max_pixels: str, endpoint: str, model_selection: list, show_images: bool):
+def apply_stable_horde_settings(enable: bool, name: str, apikey: str, allow_img2img: bool, allow_painting: bool, allow_unsafe_ipaddr: bool, allow_post_processing, nsfw: bool, interval: int, max_pixels: str, endpoint: str, model_selection: list, show_images: bool):
     config.enabled = enable
-    config.maintenance = maintenance_mode
     config.allow_img2img = allow_img2img
     config.allow_painting = allow_painting
     config.allow_unsafe_ipaddr = allow_unsafe_ipaddr
+    config.allow_post_processing = allow_post_processing
     config.interval = interval
     config.endpoint = endpoint
     config.apikey = apikey
@@ -43,8 +43,6 @@ def apply_stable_horde_settings(enable: bool, maintenance_mode: bool, name: str,
     config.nsfw = nsfw
     config.show_image_preview = show_images
     config.save()
-
-    horde.config = config
 
     return f'Status: {"Running" if config.enabled else "Stopped"}', 'Running Type: Image Generation'
 
@@ -64,12 +62,12 @@ def on_ui_tabs():
                 with gr.Column():
                     with gr.Box(scale=2):
                         enable = gr.Checkbox(config.enabled, label='Enable', elem_id=tab_prefix + 'enable')
-                        maintenance_mode = gr.Checkbox(config.maintenance, label='Maintenance Mode')
                         name = gr.Textbox(config.name, label='Worker Name', elem_id=tab_prefix + 'name')
                         apikey = gr.Textbox(config.apikey, label='Stable Horde API Key', elem_id=tab_prefix + 'apikey')
-                        allow_img2img = gr.Checkbox(True, label='Allow img2img')
-                        allow_painting = gr.Checkbox(True, label='Allow Painting')
-                        allow_unsafe_ipaddr = gr.Checkbox(True, label='Allow Unsafe IP Address')
+                        allow_img2img = gr.Checkbox(config.allow_img2img, label='Allow img2img')
+                        allow_painting = gr.Checkbox(config.allow_painting, label='Allow Painting')
+                        allow_unsafe_ipaddr = gr.Checkbox(config.allow_unsafe_ipaddr, label='Allow Unsafe IP Address')
+                        allow_post_processing = gr.Checkbox(config.allow_post_processing, label='Allow Post Processing')
                         nsfw = gr.Checkbox(config.nsfw, label='Allow NSFW')
                         interval = gr.Slider(0, 60, config.interval, step=1, label='Duration Between Generations (seconds)')
                         max_pixels = gr.Textbox(str(config.max_pixels), label='Max Pixels', elem_id=tab_prefix + 'max-pixels')
@@ -85,7 +83,7 @@ def on_ui_tabs():
                     refresh_image = gr.Button('Refresh Image', visible=False, elem_id=tab_prefix + 'refresh-image')
 
                     current_id = gr.Textbox('Current ID: ', label='', elem_id=tab_prefix + 'current-id', readonly=True)
-                    preview = gr.Gallery(elem_id=tab_prefix + 'preview', visible=config.show_image_preview, readonly=True).style(grid=4)
+                    preview = gr.Gallery(label='Preview', elem_id=tab_prefix + 'preview', visible=config.show_image_preview, readonly=True).style(grid=4)
 
                     def on_refresh(image=False, show_images=config.show_image_preview):
                         cid = f"Current ID: {horde.state.id}"
@@ -104,12 +102,12 @@ def on_ui_tabs():
             fn=apply_stable_horde_settings,
             inputs=[
                 enable,
-                maintenance_mode,
                 name,
                 apikey,
                 allow_img2img,
                 allow_painting,
                 allow_unsafe_ipaddr,
+                allow_post_processing,
                 nsfw,
                 interval,
                 max_pixels,

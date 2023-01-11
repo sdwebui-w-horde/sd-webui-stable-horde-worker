@@ -23,7 +23,6 @@ safety_checker = None
 
 class StableHordeConfig(object):
     enabled: bool
-    maintenance: bool
     endpoint: str
     apikey: str
     name: str
@@ -33,6 +32,7 @@ class StableHordeConfig(object):
     allow_img2img: bool
     allow_painting: bool
     allow_unsafe_ipaddr: bool
+    allow_post_processing: bool
     show_image_preview: bool
 
     def __init__(self, basedir: str):
@@ -53,10 +53,10 @@ class StableHordeConfig(object):
         if not path.exists(path.join(self.basedir, "config.json")):
             self.config = {
                 "enabled": False,
-                "maintenance": False,
                 "allow_img2img": True,
                 "allow_painting": True,
                 "allow_unsafe_ipaddr": True,
+                "allow_post_processing": True,
                 "show_image_preview": False,
                 "endpoint": "https://stablehorde.net/",
                 "apikey": "00000000",
@@ -379,7 +379,6 @@ class StableHorde:
             self.state.status = "ERROR: Generation Already Submitted"
         else:
             self.handle_error(r.status, res)
-
 
     # check and replace nsfw content
     def check_safety(self, x_image):
