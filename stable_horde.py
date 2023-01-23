@@ -13,6 +13,7 @@ from PIL import Image
 from transformers.models.auto.feature_extraction_auto import AutoFeatureExtractor
 
 from modules import shared, call_queue, txt2img, img2img, processing, sd_models, sd_samplers
+from modules.images import save_image
 
 stable_horde_supported_models_url = "https://raw.githubusercontent.com/Sygil-Dev/nataili-model-reference/main/db.json"
 
@@ -34,6 +35,7 @@ class StableHordeConfig(object):
     allow_unsafe_ipaddr: bool
     allow_post_processing: bool
     show_image_preview: bool
+    save_images: bool
 
     def __init__(self, basedir: str):
         self.basedir = basedir
@@ -58,6 +60,7 @@ class StableHordeConfig(object):
                 "allow_unsafe_ipaddr": True,
                 "allow_post_processing": True,
                 "show_image_preview": False,
+                "save_images": False,
                 "endpoint": "https://stablehorde.net/",
                 "apikey": "00000000",
                 "name": "",
@@ -302,7 +305,7 @@ class StableHorde:
         )
         else:
             p = txt2img.StableDiffusionProcessingTxt2Img(**params)
-        
+
         shared.state.begin()
 
         with call_queue.queue_lock:
@@ -340,6 +343,11 @@ class StableHorde:
             self.state.steps = req['payload']['ddim_steps']
             self.state.sampler = sampler_name
             self.state.image = image
+
+            # Saving image locally
+            infotext = processing.create_infotext(p, p.all_prompts, p.all_seeds, p.all_subseeds, "Stable Horde", 0, 0) if shared.opts.enable_pnginfo else None
+            if self.config.save_images:
+                save_image(image, "horde", "", params['seed'], params['prompt'], "png", info=infotext, p=p)
 
         shared.state.end()
 

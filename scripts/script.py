@@ -29,7 +29,7 @@ def on_app_started(demo: Optional[gr.Blocks], app: FastAPI):
     requests.get(f'{local_url}stable-horde')
 
 
-def apply_stable_horde_settings(enable: bool, name: str, apikey: str, allow_img2img: bool, allow_painting: bool, allow_unsafe_ipaddr: bool, allow_post_processing, nsfw: bool, interval: int, max_pixels: str, endpoint: str, model_selection: list, show_images: bool):
+def apply_stable_horde_settings(enable: bool, name: str, apikey: str, allow_img2img: bool, allow_painting: bool, allow_unsafe_ipaddr: bool, allow_post_processing, nsfw: bool, interval: int, max_pixels: str, endpoint: str, model_selection: list, show_images: bool, save_images: bool):
     config.enabled = enable
     config.allow_img2img = allow_img2img
     config.allow_painting = allow_painting
@@ -42,6 +42,7 @@ def apply_stable_horde_settings(enable: bool, name: str, apikey: str, allow_img2
     config.max_pixels = int(max_pixels)
     config.nsfw = nsfw
     config.show_image_preview = show_images
+    config.save_images = save_images
     config.save()
 
     return f'Status: {"Running" if config.enabled else "Stopped"}', 'Running Type: Image Generation'
@@ -78,6 +79,7 @@ def on_ui_tabs():
 
                 with gr.Column():
                     show_images = gr.Checkbox(config.show_image_preview, label='Show Images')
+                    save_images = gr.Checkbox(config.show_image_preview, label='Save Images')
 
                     refresh = gr.Button('Refresh', visible=False, elem_id=tab_prefix + 'refresh')
                     refresh_image = gr.Button('Refresh Image', visible=False, elem_id=tab_prefix + 'refresh-image')
@@ -114,6 +116,7 @@ def on_ui_tabs():
                 endpoint,
                 model_selection,
                 show_images,
+                save_images,
             ],
             outputs=[status, running_type],
         )
