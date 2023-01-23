@@ -293,10 +293,10 @@ class StableHorde:
         else:
             generation = base64.b64encode(bytesio.getvalue()).decode("utf8")
 
-        await self.submit(req['id'], req['payload']['seed'], generation)
+        await self.submit(req['id'], int(req['payload']['seed']), generation)
 
 
-    async def submit(self, id: str, seed: str, generation: str):
+    async def submit(self, id: str, seed: int, generation: str):
         post_data = {
             "id": id,
             "generation": generation,
