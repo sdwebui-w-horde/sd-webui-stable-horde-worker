@@ -6,11 +6,11 @@
 
 # SD WebUI ❤️ Stable Horde
 
-✨ *Stable Horde Worker Client for Stable Diffusion WebUI* ✨
+✨ *Stable Horde Worker Bridge for Stable Diffusion WebUI* ✨
 
 </div>
 
-An unofficial [Stable Horde](https://stablehorde.net/) worker client as a [Stable Diffusion WebUI](https://github.com/AUTOMATIC1111/stable-diffusion-webui) extension.
+An unofficial [Stable Horde](https://stablehorde.net/) worker bridge as a [Stable Diffusion WebUI](https://github.com/AUTOMATIC1111/stable-diffusion-webui) extension.
 
 ## Features
 
@@ -32,12 +32,11 @@ Then, launch the Stable Diffusion WebUI. And then, go to `Settings` tab page, yo
 
 ![settings](./screenshots/settings.png)
 
-Setup your `API key` and `Team name` from [Stable Horde](https://stablehorde.net/) and click the `Apply settings` buttons.
+Setup your `API key` and `Worker name` from [Stable Horde](https://stablehorde.net/) and click the `Apply settings` buttons.
 
 Click the `Enable` checkbox to enable the Stable Horde worker client.
 
 ### Existing issues
 
-- [model name should be typed by user manually](https://github.com/sdwebui-w-horde/sd-webui-stable-horde-worker/issues/2)
 - only one model is usable
 - [model should be selected manually](https://github.com/sdwebui-w-horde/sd-webui-stable-horde-worker/issues/3)
