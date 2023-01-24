@@ -161,7 +161,9 @@ class StableHorde:
             "nsfw": self.config.nsfw,
             "blacklist": [],
             "models": self.config.models,
+            # TODO: add support for bridge version 11 "tiling"
             "bridge_version": 9,
+            "bridge_agent": "Stable Horde Worker Bridge for Stable Diffusion WebUI:10:https://github.com/sdwebui-w-horde/sd-webui-stable-horde-worker",
             "threads": 1,
             "max_pixels": self.config.max_pixels,
             "allow_img2img": self.config.allow_img2img,
