@@ -207,15 +207,6 @@ class StableHorde:
             negative = ""
 
         postprocessors = req['payload'].get('post_processing', None) or []
-        restore_faces = False
-        if "GFPGAN" in postprocessors:
-            restore_faces = True
-            shared.opts.face_restoration_model = "GFPGAN"
-            shared.opts.save(shared.config_filename)
-        elif "CodeFormers" in postprocessors:
-            restore_faces = True
-            shared.opts.face_restoration_model = "CodeFormer"
-            shared.opts.save(shared.config_filename)
 
         params = {
             "sd_model": shared.sd_model,
@@ -230,7 +221,6 @@ class StableHorde:
             "subseed": req['payload'].get('seed_variation', 1),
             "steps": req['payload']['ddim_steps'],
             "n_iter": req['payload']['n_iter'],
-            "restore_faces": restore_faces,
             "do_not_save_samples": True,
             "do_not_save_grid": True,
         }
@@ -264,15 +254,25 @@ class StableHorde:
             else:
                 image = processed.images[0]
 
+            if "GFPGAN" in postprocessors or "CodeFormers" in postprocessors:
+                model = "CodeFormer" if "CodeFormers" in postprocessors else "GFPGAN"
+                face_restorators = [x for x in shared.face_restorers if x.name() == model]
+                if len(face_restorators) == 0:
+                    print(f"ERROR: No face restorer for {model}")
+
+                else:
+                    image = face_restorators[0].restore(np.array(image))
+                    image = Image.fromarray(image)
+
             if "RealESRGAN_x4plus" in postprocessors and not has_nsfw:
-                from modules.extras import run_extras
+                from modules.postprocessing import run_extras
                 images, _info, _wtf = run_extras(
                     image=image, extras_mode=0, resize_mode=0,
                     show_extras_results=True, upscaling_resize=2,
                     upscaling_resize_h=None, upscaling_resize_w=None,
                     upscaling_crop=False, upscale_first=False,
-                    extras_upscaler_1=8, # 8 - RealESRGAN_x4plus
-                    extras_upscaler_2=0,
+                    extras_upscaler_1="R-ESRGAN 4x+", # 8 - RealESRGAN_x4plus
+                    extras_upscaler_2=None,
                     extras_upscaler_2_visibility=0.0,
                     gfpgan_visibility=0.0, codeformer_visibility=0.0, codeformer_weight=0.0,
                     image_folder="", input_dir="", output_dir="",
