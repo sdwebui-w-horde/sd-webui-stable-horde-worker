@@ -11,22 +11,10 @@ basedir = scripts.basedir()
 config = StableHordeConfig(basedir)
 horde = StableHorde(basedir, config)
 
-async def start_horde():
-    await horde.run()
-
 
 def on_app_started(demo: Optional[gr.Blocks], app: FastAPI):
-    @app.get('/stable-horde')
-    async def stable_horde():
-        await start_horde()
-
-    import requests
-    if demo is None:
-        local_url = f'http://localhost:{shared.cmd_opts.port if shared.cmd_opts.port else 7861}/'
-    else:
-        local_url = demo.local_url
-
-    requests.get(f'{local_url}stable-horde')
+    import gradio.utils
+    gradio.utils.synchronize_async(horde.run)
 
 
 def apply_stable_horde_settings(enable: bool, name: str, apikey: str, allow_img2img: bool, allow_painting: bool, allow_unsafe_ipaddr: bool, allow_post_processing, nsfw: bool, interval: int, max_pixels: str, endpoint: str, model_selection: list, show_images: bool, save_images: bool):
