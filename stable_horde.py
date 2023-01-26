@@ -366,7 +366,7 @@ class StableHorde:
     async def handle_request(self, job: HordeJob):
         self.patch_sampler_names()
 
-        print(f"Get popped generation request {job.id}")
+        self.state.status = f"Get popped generation request {job.id}"
         sampler_name = job.sampler
         if sampler_name == 'k_dpm_adaptive':
             sampler_name = 'k_dpm_ad'
@@ -466,7 +466,7 @@ class StableHorde:
 
         res = await job.submit(image, await self.get_session())
         if res:
-            print(f"Submission accepted, reward {res} received.")
+            self.state.status = f"Submission accepted, reward {res} received."
 
     # check and replace nsfw content
     def check_safety(self, x_image):
