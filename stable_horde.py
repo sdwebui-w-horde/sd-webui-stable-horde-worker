@@ -308,12 +308,6 @@ class StableHorde:
 
 
     async def run(self):
-        if self.session is None:
-            headers = {
-                "apikey": self.config.apikey,
-                "Content-Type": "application/json",
-            }
-            self.session = aiohttp.ClientSession(self.config.endpoint, headers=headers)
         await self.get_supported_models()
 
         while True:
