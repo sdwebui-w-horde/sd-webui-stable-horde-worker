@@ -94,7 +94,7 @@ class StableHorde:
         model_checkpoint = shared.opts.sd_model_checkpoint
         checkpoint_info = sd_models.checkpoints_list.get(model_checkpoint, None)
         if checkpoint_info is None:
-            raise Exception(f"Model checkpoint {model_checkpoint} not found")
+            return f"Model checkpoint {model_checkpoint} not found"
 
         local_hash = get_md5sum(checkpoint_info.filename)
         for model in self.supported_models:
@@ -107,14 +107,22 @@ class StableHorde:
                 self.config.models = [model["name"]]
 
         if len(self.config.models) == 0:
-            raise Exception(f"Current model {model_checkpoint} not found on StableHorde")
+            return f"Current model {model_checkpoint} not found on StableHorde"
 
 
     async def run(self):
         await self.get_supported_models()
-        self.detect_current_model()
 
         while True:
+            result = self.detect_current_model()
+            if result is not None:
+                self.state.status = result
+                # Wait 10 seconds before retrying to detect the current model
+                # if the current model is not listed in the Stable Horde supported models,
+                # we don't want to spam the server with requests
+                await asyncio.sleep(10)
+                continue
+
             await asyncio.sleep(shared.opts.stable_horde_interval)
 
             if shared.opts.stable_horde_enable:
