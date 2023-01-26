@@ -143,6 +143,7 @@ class StableHorde:
             sd_samplers.SamplerData("Euler Karras", lambda model, funcname="sample_euler": sd_samplers.KDiffusionSampler(funcname, model), ['k_euler_ka'], {'scheduler': 'karras'}),
             sd_samplers.SamplerData("Heun Karras", lambda model, funcname="sample_heun": sd_samplers.KDiffusionSampler(funcname, model), ['k_heun_ka'], {'scheduler': 'karras'}),
             sd_samplers.SamplerData('DPM adaptive Karras', lambda model, funcname='sample_dpm_adaptive': sd_samplers.KDiffusionSampler(funcname, model), ['k_dpm_ad_ka'], {'scheduler': 'karras'}),
+            sd_samplers.SamplerData('DPM fast Karras', lambda model, funcname='sample_dpm_fast': sd_samplers.KDiffusionSampler(funcname, model), ['k_dpm_fast_ka'], {'scheduler': 'karras'}),
         ]
         sd_samplers.samplers.extend(samplers)
         sd_samplers.samplers_for_img2img.extend(samplers)
