@@ -10,7 +10,7 @@ import aiohttp
 import numpy as np
 from diffusers.pipelines.stable_diffusion.safety_checker import StableDiffusionSafetyChecker
 from PIL import Image
-from transformers import AutoFeatureExtractor
+from transformers.models.auto.feature_extraction_auto import AutoFeatureExtractor
 
 from modules import shared, call_queue, txt2img, img2img, processing, sd_models, sd_samplers, scripts
 
