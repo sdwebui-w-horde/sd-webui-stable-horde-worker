@@ -9,24 +9,13 @@ from stable_horde import StableHorde, StableHordeConfig
 
 basedir = scripts.basedir()
 
-async def start_horde():
-    config = StableHordeConfig(basedir)
-    horde = StableHorde(config)
-    await horde.run()
-
 
 def on_app_started(demo: Optional[gr.Blocks], app: FastAPI):
-    @app.get('/stable-horde')
-    async def stable_horde():
-        await start_horde()
+    config = StableHordeConfig(basedir)
+    horde = StableHorde(config)
 
-    import requests
-    if demo is None:
-        local_url = f"http://localhost:{shared.cmd_opts.port if shared.cmd_opts.port else 7861}/"
-    else:
-        local_url = demo.local_url
-
-    requests.get(f"{local_url}stable-horde")
+    import gradio.utils
+    gradio.utils.synchronize_async(horde.run)
 
 
 def on_ui_settings():
