@@ -299,14 +299,15 @@ class StableHorde:
         )
         else:
             p = txt2img.StableDiffusionProcessingTxt2Img(**params)
-        
-        shared.state.begin()
 
         with call_queue.queue_lock:
+            shared.state.begin()
             processed = processing.process_images(p)
+            shared.state.end()
 
-            has_nsfw = False
+        has_nsfw = False
 
+        with call_queue.queue_lock:
             if req["payload"].get("use_nsfw_censor"):
                 x_image = np.array(processed.images[0])
                 image, has_nsfw = self.check_safety(x_image)
@@ -314,18 +315,20 @@ class StableHorde:
             else:
                 image = processed.images[0]
 
-            if "GFPGAN" in postprocessors or "CodeFormers" in postprocessors:
-                model = "CodeFormer" if "CodeFormers" in postprocessors else "GFPGAN"
-                face_restorators = [x for x in shared.face_restorers if x.name() == model]
-                if len(face_restorators) == 0:
-                    print(f"ERROR: No face restorer for {model}")
+        if "GFPGAN" in postprocessors or "CodeFormers" in postprocessors:
+            model = "CodeFormer" if "CodeFormers" in postprocessors else "GFPGAN"
+            face_restorators = [x for x in shared.face_restorers if x.name() == model]
+            if len(face_restorators) == 0:
+                print(f"ERROR: No face restorer for {model}")
 
-                else:
+            else:
+                with call_queue.queue_lock:
                     image = face_restorators[0].restore(np.array(image))
-                    image = Image.fromarray(image)
+                image = Image.fromarray(image)
 
-            if "RealESRGAN_x4plus" in postprocessors and not has_nsfw:
-                from modules.postprocessing import run_extras
+        if "RealESRGAN_x4plus" in postprocessors and not has_nsfw:
+            from modules.postprocessing import run_extras
+            with call_queue.queue_lock:
                 images, _info, _wtf = run_extras(
                     image=image, extras_mode=0, resize_mode=0,
                     show_extras_results=True, upscaling_resize=2,
@@ -338,17 +341,15 @@ class StableHorde:
                     image_folder="", input_dir="", output_dir="",
                 )
 
-                image = images[0]
+            image = images[0]
 
-            self.state.id = req['id']
-            self.state.prompt = prompt
-            self.state.negative_prompt = negative
-            self.state.scale = req['payload'].get('cfg_scale', 5.0)
-            self.state.steps = req['payload']['ddim_steps']
-            self.state.sampler = sampler_name
-            self.state.image = image
-
-        shared.state.end()
+        self.state.id = req['id']
+        self.state.prompt = prompt
+        self.state.negative_prompt = negative
+        self.state.scale = req['payload'].get('cfg_scale', 5.0)
+        self.state.steps = req['payload']['ddim_steps']
+        self.state.sampler = sampler_name
+        self.state.image = image
 
         bytesio = io.BytesIO()
         image.save(bytesio, format="WebP", quality=95)
