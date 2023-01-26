@@ -4,7 +4,7 @@ import io
 import json
 from os import path
 from random import randint
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 import aiohttp
 import numpy as np
@@ -106,6 +106,156 @@ class State:
             "sampler": self.sampler,
         }
 
+
+class HordeJob:
+    retry_interval: int = 1
+
+    def __init__(self, session: aiohttp.ClientSession, id: str, model: str, prompt: str, negative_prompt: str, sampler: str, cfg_scale: float, seed: int, denoising_strength: float, n_iter: int, height: int, width: int, subseed: int, steps: int, karras: bool, tiling: bool, postprocessors: List[str], nsfw_censor: bool = False, source_image: Optional[Image.Image] = None, source_processing: Optional[str] = "img2img", source_mask: Optional[Image.Image] = None, r2_upload: Optional[str] = None):
+        self.id = id
+        self.model = model
+        self.prompt = prompt
+        self.negative_prompt = negative_prompt
+        self.sampler = sampler
+        self.cfg_scale = cfg_scale
+        self.seed = seed
+        self.denoising_strength = denoising_strength
+        self.n_iter = n_iter
+        self.height = height
+        self.width = width
+        self.subseed = subseed
+        self.steps = steps
+        self.karras = karras
+        # TODO: add support for bridge version 11 "tiling"
+        self.tiling = tiling
+        self.postprocessors = postprocessors
+        self.nsfw_censor = nsfw_censor
+        self.source_image = source_image
+        self.source_processing = source_processing # "img2img", "inpainting", "outpainting"
+        self.source_mask = source_mask
+        self.r2_upload = r2_upload
+
+    async def submit(self, image: Image.Image, session: aiohttp.ClientSession):
+        bytesio = io.BytesIO()
+        image.save(bytesio, format="WebP", quality=95)
+
+        if self.r2_upload:
+            async with aiohttp.ClientSession() as session:
+                attempts = 10
+                while attempts > 0:
+                    try:
+                        r = await session.put(self.r2_upload, data=bytesio.getvalue())
+                        break
+                    except aiohttp.ClientConnectorError:
+                        attempts -= 1
+                        await asyncio.sleep(self.retry_interval)
+                        continue
+            generation = "R2"
+
+        else:
+            generation = base64.b64encode(bytesio.getvalue()).decode("utf8")
+
+        post_data = {
+            "id": self.id,
+            "generation": generation,
+            "seed": self.seed,
+        }
+
+        attempts = 10
+        while attempts > 0:
+            try:
+                r = await session.post('/api/v2/generate/submit', json=post_data)
+
+                try:
+                    res = await r.json()
+
+                    if r.status == 404:
+                        print(f"job {self.id} has been submitted already")
+                        return
+
+                    if r.ok:
+                        return res.get("reward", None)
+                    else:
+                        print(f"Failed to submit job with status code {r.status}: {res.get('message')}")
+                        return None
+                except Exception:
+                    print(f"Error when decoding response, the server might be down.")
+                    return None
+                
+            except aiohttp.ClientConnectorError:
+                attempts -= 1
+                await asyncio.sleep(self.retry_interval)
+                continue
+
+
+    @classmethod
+    async def get(cls, session: aiohttp.ClientSession, config: StableHordeConfig, models: List[str]):
+        # https://stablehorde.net/api/
+        post_data = {
+            "name": config.name,
+            "priority_usernames": [],
+            "nsfw": config.nsfw,
+            "blacklist": [],
+            "models": models,
+            # TODO: add support for bridge version 11 "tiling"
+            "bridge_version": 9,
+            "bridge_agent": "Stable Horde Worker Bridge for Stable Diffusion WebUI:10:https://github.com/sdwebui-w-horde/sd-webui-stable-horde-worker",
+            "threads": 1,
+            "max_pixels": config.max_pixels,
+            "allow_img2img": config.allow_img2img,
+            "allow_painting": config.allow_painting,
+            "allow_unsafe_ipaddr": config.allow_unsafe_ipaddr,
+        }
+
+        r = await session.post('/api/v2/generate/pop', json=post_data)
+
+        req = await r.json()
+
+        if r.status != 200:
+            raise Exception(f"Failed to get job: {req.get('message')}")
+
+        if not req.get('id'):
+            return
+        
+        payload = req.get('payload')
+        prompt = payload.get('prompt')
+        if "###" in prompt:
+            prompt, negative = map(lambda x: x.strip(), prompt.split("###"))
+        else:
+            negative = ""
+
+
+        def to_image(base64str: Optional[str]) -> Optional[Image.Image]:
+            if not base64str:
+                return None
+            return Image.open(io.BytesIO(base64.b64decode(base64str)))
+
+
+        return cls(
+            session=session,
+            id=req['id'],
+            prompt=prompt,
+            negative_prompt=negative,
+            sampler=payload.get('sampler_name'),
+            cfg_scale=payload.get('cfg_scale', 5),
+            seed=int(payload.get('seed', randint(0, 2**32))),
+            denoising_strength=payload.get('denoising_strength', 0.75),
+            n_iter=payload.get('n_iter', 1),
+            height=payload['height'],
+            width=payload['width'],
+            subseed=payload.get('seed_variation', 1),
+            steps=payload.get('ddim_steps', 30),
+            karras=payload.get('karras', False),
+            tiling=payload.get('tiling', False),
+            postprocessors=payload.get('post_processing', []),
+            nsfw_censor=payload.get('use_nsfw_censor', False),
+            model=req['model'],
+            source_image=to_image(payload.get('source_image')),
+            source_processing=payload.get('source_processing'),
+            source_mask=to_image(payload.get('source_mask')),
+            r2_upload=payload.get('r2_upload'),
+        )
+
+
 class StableHorde:
     def __init__(self, basedir: str, config: StableHordeConfig):
         self.basedir = basedir
@@ -170,6 +320,9 @@ class StableHorde:
             result = self.detect_current_model()
             if result is not None:
                 self.state.status = result
+                # Wait 10 seconds before retrying to detect the current model
+                # if the current model is not listed in the Stable Horde supported models,
+                # we don't want to spam the server with requests
                 await asyncio.sleep(10)
                 continue
 
@@ -177,7 +330,7 @@ class StableHorde:
 
             if self.config.enabled:
                 try:
-                    req = await self.get_popped_request()
+                    req = await HordeJob.get(await self.get_session(), self.config, self.current_models)
                     if req is None:
                         continue
 
@@ -201,6 +354,7 @@ class StableHorde:
             sd_samplers.SamplerData("Euler Karras", lambda model, funcname="sample_euler": sd_samplers.KDiffusionSampler(funcname, model), ['k_euler_ka'], {'scheduler': 'karras'}),
             sd_samplers.SamplerData("Heun Karras", lambda model, funcname="sample_heun": sd_samplers.KDiffusionSampler(funcname, model), ['k_heun_ka'], {'scheduler': 'karras'}),
             sd_samplers.SamplerData('DPM adaptive Karras', lambda model, funcname='sample_dpm_adaptive': sd_samplers.KDiffusionSampler(funcname, model), ['k_dpm_ad_ka'], {'scheduler': 'karras'}),
+            sd_samplers.SamplerData('DPM fast Karras', lambda model, funcname='sample_dpm_fast': sd_samplers.KDiffusionSampler(funcname, model), ['k_dpm_fast_ka'], {'scheduler': 'karras'}),
         ]
         sd_samplers.samplers.extend(samplers)
         sd_samplers.samplers_for_img2img.extend(samplers)
@@ -210,93 +364,48 @@ class StableHorde:
             for alias in sampler.aliases:
                 sd_samplers.samplers_map[alias.lower()] = sampler.name
 
-
-    async def get_popped_request(self) -> Optional[Dict[str, Any]]:
-        # https://stablehorde.net/api/
-        post_data = {
-            "name": self.config.name,
-            "priority_usernames": [],
-            "nsfw": self.config.nsfw,
-            "blacklist": [],
-            "models": self.current_models,
-            # TODO: add support for bridge version 11 "tiling"
-            "bridge_version": 9,
-            "bridge_agent": "Stable Horde Worker Bridge for Stable Diffusion WebUI:10:https://github.com/sdwebui-w-horde/sd-webui-stable-horde-worker",
-            "threads": 1,
-            "max_pixels": self.config.max_pixels,
-            "allow_img2img": self.config.allow_img2img,
-            "allow_painting": self.config.allow_painting,
-            "allow_unsafe_ipaddr": self.config.allow_unsafe_ipaddr,
-        }
-
-        r = await self.session.post('/api/v2/generate/pop', json=post_data)
-
-        req = await r.json()
-
-        if r.status != 200:
-            self.handle_error(r.status, req)
-            return
-
-        return req
-
-
-    async def handle_request(self, req: Dict[str, Any]):
-        if not req.get('id'):
-            return
-
+    async def handle_request(self, job: HordeJob):
         self.patch_sampler_names()
 
-        self.state.status = f"Get popped generation request {req['id']}"
-        sampler_name = req['payload']['sampler_name']
+        print(f"Get popped generation request {job.id}")
+        sampler_name = job.sampler
         if sampler_name == 'k_dpm_adaptive':
             sampler_name = 'k_dpm_ad'
         if sampler_name not in sd_samplers.samplers_map:
             self.state.status = f"ERROR: Unknown sampler {sampler_name}"
             return
-        if req['payload']['karras']:
+        if job.karras:
             sampler_name += '_ka'
 
         sampler = sd_samplers.samplers_map.get(sampler_name, None)
         if sampler is None:
             raise Exception(f"ERROR: Unknown sampler {sampler_name}")
 
-        prompt = req['payload'].get('prompt', '')
-        if "###" in prompt:
-            prompt, negative = map(lambda x: x.strip(), prompt.split("###"))
-        else:
-            negative = ""
-
-        postprocessors = req['payload'].get('post_processing', None) or []
+        postprocessors = job.postprocessors
 
         params = {
             "sd_model": shared.sd_model,
-            "prompt": prompt,
-            "negative_prompt": negative,
+            "prompt": job.prompt,
+            "negative_prompt": job.negative_prompt,
             "sampler_name": sampler,
-            "cfg_scale": req['payload'].get('cfg_scale', 5.0),
-            "seed": req['payload'].get('seed', randint(0, 2**32)),
-            "denoising_strength": req['payload'].get('denoising_strength', 0.75),
-            "height": req['payload']['height'],
-            "width": req['payload']['width'],
-            "subseed": req['payload'].get('seed_variation', 1),
-            "steps": req['payload']['ddim_steps'],
-            "n_iter": req['payload']['n_iter'],
+            "cfg_scale": job.cfg_scale,
+            "seed": job.seed,
+            "denoising_strength": job.denoising_strength,
+            "height": job.height,
+            "width": job.width,
+            "subseed": job.subseed,
+            "steps": job.steps,
+            "n_iter": job.n_iter,
             "do_not_save_samples": True,
             "do_not_save_grid": True,
         }
 
-        if req.get('source_image', None) is not None:
-            b64: str = req.get('source_image', '')
-            image = Image.open(io.BytesIO(base64.b64decode(b64)))
-            mask = None
-            if req.get('source_mask', None) is not None:
-                b64: str = req.get('source_mask', '')
-                mask = Image.open(io.BytesIO(base64.b64decode(b64)))
+        if job.source_image is not None:
             p = img2img.StableDiffusionProcessingImg2Img(
-            init_images=[image],
-            mask=mask,
-            **params,
-        )
+                init_images=[job.source_image],
+                mask=job.source_mask,
+                **params,
+            )
         else:
             p = txt2img.StableDiffusionProcessingTxt2Img(**params)
 
@@ -308,7 +417,7 @@ class StableHorde:
         has_nsfw = False
 
         with call_queue.queue_lock:
-            if req["payload"].get("use_nsfw_censor"):
+            if job.nsfw_censor:
                 x_image = np.array(processed.images[0])
                 image, has_nsfw = self.check_safety(x_image)
 
@@ -343,50 +452,17 @@ class StableHorde:
 
             image = images[0]
 
-        self.state.id = req['id']
-        self.state.prompt = prompt
-        self.state.negative_prompt = negative
-        self.state.scale = req['payload'].get('cfg_scale', 5.0)
-        self.state.steps = req['payload']['ddim_steps']
+        self.state.id = job.id
+        self.state.prompt = job.prompt
+        self.state.negative_prompt = job.negative_prompt
+        self.state.scale = job.cfg_scale
+        self.state.steps = job.steps
         self.state.sampler = sampler_name
         self.state.image = image
 
-        bytesio = io.BytesIO()
-        image.save(bytesio, format="WebP", quality=95)
-
-        if req.get("r2_upload"):
-            async with aiohttp.ClientSession() as session:
-                await session.put(req.get("r2_upload", ''), data=bytesio.getvalue())
-            generation = "R2"
-
-        else:
-            generation = base64.b64encode(bytesio.getvalue()).decode("utf8")
-
-        await self.submit(req['id'], int(req['payload']['seed']), generation)
-
-
-    async def submit(self, id: str, seed: int, generation: str):
-        post_data = {
-            "id": id,
-            "generation": generation,
-            "seed": seed,
-        }
-
-        r = await self.session.post('/api/v2/generate/submit', json=post_data)
-
-        res = await r.json()
-
-        """
-        res = {
-            "reward": 10
-        }
-        """
-        if (r.status == 200 and res.get("reward") is not None):
-            self.state.status = f"Submission accepted, reward {res['reward']} received."
-        elif (r.status == 400):
-            self.state.status = "ERROR: Generation Already Submitted"
-        else:
-            self.handle_error(r.status, res)
+        res = await job.submit(image, await self.get_session())
+        if res:
+            print(f"Submission accepted, reward {res} received.")
 
     # check and replace nsfw content
     def check_safety(self, x_image):
@@ -403,6 +479,15 @@ class StableHorde:
             return self.sfw_request_censor, has_nsfw_concept
         return Image.fromarray(image), has_nsfw_concept
 
+
+    async def get_session(self) -> aiohttp.ClientSession:
+        if self.session is None:
+            headers = {
+                "apikey": self.config.apikey,
+                "Content-Type": "application/json",
+            }
+            self.session = aiohttp.ClientSession(self.config.endpoint, headers=headers)
+        return self.session
 
     def handle_error(self, status: int, res: Dict[str, Any]):
         if status == 401:
