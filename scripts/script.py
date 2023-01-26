@@ -17,7 +17,7 @@ def on_app_started(demo: Optional[gr.Blocks], app: FastAPI):
     gradio.utils.synchronize_async(horde.run)
 
 
-def apply_stable_horde_settings(enable: bool, name: str, apikey: str, allow_img2img: bool, allow_painting: bool, allow_unsafe_ipaddr: bool, allow_post_processing, nsfw: bool, interval: int, max_pixels: str, endpoint: str, model_selection: list, show_images: bool):
+def apply_stable_horde_settings(enable: bool, name: str, apikey: str, allow_img2img: bool, allow_painting: bool, allow_unsafe_ipaddr: bool, allow_post_processing, nsfw: bool, interval: int, max_pixels: str, endpoint: str, model_selection: list, show_images: bool, save_images: bool, save_images_folder: str):
     config.enabled = enable
     config.allow_img2img = allow_img2img
     config.allow_painting = allow_painting
@@ -30,6 +30,8 @@ def apply_stable_horde_settings(enable: bool, name: str, apikey: str, allow_img2
     config.max_pixels = int(max_pixels)
     config.nsfw = nsfw
     config.show_image_preview = show_images
+    config.save_images = save_images
+    config.save_images_folder = save_images_folder
     config.save()
 
     return f'Status: {"Running" if config.enabled else "Stopped"}', 'Running Type: Image Generation'
@@ -60,12 +62,14 @@ def on_ui_tabs():
                         interval = gr.Slider(0, 60, config.interval, step=1, label='Duration Between Generations (seconds)')
                         max_pixels = gr.Textbox(str(config.max_pixels), label='Max Pixels', elem_id=tab_prefix + 'max-pixels')
                         endpoint = gr.Textbox(config.endpoint, label='Stable Horde Endpoint', elem_id=tab_prefix + 'endpoint')
+                        save_images_folder = gr.Textbox(config.save_images_folder, label='Folder to Save Generation Images', elem_id=tab_prefix + 'save-images-folder')
 
                     with gr.Row():
                         model_selection = gr.CheckboxGroup(choices=shared.list_checkpoint_tiles(), value=[shared.list_checkpoint_tiles()[0]], label='Model Selection')
 
                 with gr.Column():
                     show_images = gr.Checkbox(config.show_image_preview, label='Show Images')
+                    save_images = gr.Checkbox(config.show_image_preview, label='Save Images')
 
                     refresh = gr.Button('Refresh', visible=False, elem_id=tab_prefix + 'refresh')
                     refresh_image = gr.Button('Refresh Image', visible=False, elem_id=tab_prefix + 'refresh-image')
@@ -102,6 +106,8 @@ def on_ui_tabs():
                 endpoint,
                 model_selection,
                 show_images,
+                save_images,
+                save_images_folder,
             ],
             outputs=[status, running_type],
         )
