@@ -267,13 +267,13 @@ class StableHorde:
                     image = Image.fromarray(image)
 
             if "RealESRGAN_x4plus" in postprocessors and not has_nsfw:
-                from modules.postprocessing import run_extras
+                from modules.extras import run_extras
                 images, _info, _wtf = run_extras(
                     image=image, extras_mode=0, resize_mode=0,
                     show_extras_results=True, upscaling_resize=2,
                     upscaling_resize_h=None, upscaling_resize_w=None,
                     upscaling_crop=False, upscale_first=False,
-                    extras_upscaler_1="R-ESRGAN 4x+", # 8 - RealESRGAN_x4plus
+                    extras_upscaler_1=[x.name.lower() for x in shared.sd_upscalers].index("R-ESRGAN 4x+".lower()), # need index ... "R-ESRGAN 4x+", # 8 - RealESRGAN_x4plus
                     extras_upscaler_2=None,
                     extras_upscaler_2_visibility=0.0,
                     gfpgan_visibility=0.0, codeformer_visibility=0.0, codeformer_weight=0.0,
