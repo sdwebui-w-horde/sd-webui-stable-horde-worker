@@ -141,7 +141,7 @@ class StableHorde:
         model_checkpoint = shared.opts.sd_model_checkpoint
         checkpoint_info = sd_models.checkpoints_list.get(model_checkpoint, None)
         if checkpoint_info is None:
-            raise Exception(f"Model checkpoint {model_checkpoint} not found")
+            return f"Model checkpoint {model_checkpoint} not found"
 
         local_hash = get_md5sum(checkpoint_info.filename)
         for model in self.supported_models:
@@ -154,7 +154,7 @@ class StableHorde:
                 self.current_models = [model["name"]]
 
         if len(self.current_models) == 0:
-            raise Exception(f"Current model {model_checkpoint} not found on StableHorde")
+            return f"Current model {model_checkpoint} not found on StableHorde"
 
 
     async def run(self):
@@ -165,9 +165,14 @@ class StableHorde:
             }
             self.session = aiohttp.ClientSession(self.config.endpoint, headers=headers)
         await self.get_supported_models()
-        self.detect_current_model()
 
         while True:
+            result = self.detect_current_model()
+            if result is not None:
+                self.state.status = result
+                await asyncio.sleep(10)
+                continue
+
             await asyncio.sleep(self.config.interval)
 
             if self.config.enabled:
@@ -241,7 +246,7 @@ class StableHorde:
 
         self.patch_sampler_names()
 
-        self.state.status = f"Get popped generation request {req['id']}: {req['payload'].get('prompt', '')}"
+        self.state.status = f"Get popped generation request {req['id']}"
         sampler_name = req['payload']['sampler_name']
         if sampler_name == 'k_dpm_adaptive':
             sampler_name = 'k_dpm_ad'
