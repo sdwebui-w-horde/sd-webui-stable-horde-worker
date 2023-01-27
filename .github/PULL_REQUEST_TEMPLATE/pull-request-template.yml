@@ -28,7 +28,7 @@ body:
           required: true
         - label: I've read the [Contribution Guidelines](https://github.com/sdwebui-w-horde/sd-webui-stable-horde-worker/blob/master/CONTRIBUTING.md)
           required: true
-        - label: I've read the [Code of Conduct](https://github.com/sdwebui-w-horde/sd-webui-stable-horde-worker/blob/master/CODE_OF_CONDUCT.md)
+        - label: I've read the [Code of Conduct](https://github.com/sdwebui-w-horde/.github/blob/master/CODE_OF_CONDUCT.md)
           required: true
 
 
