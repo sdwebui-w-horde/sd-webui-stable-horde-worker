@@ -1,5 +1,6 @@
 import asyncio
 import base64
+from enum import Enum
 import io
 import json
 from os import path
@@ -59,10 +60,23 @@ class StableHordeConfig:
         return shared.opts.stable_horde_allow_unsafe_ipaddr
 
 
+class JobStatus(Enum):
+    PENDING = "pending"
+    RUNNING = "running"
+    GENERATED = "generated"
+    SUBMITTING = "submitting"
+    UPLOADED = "uploaded"
+    SUBMITTED = "submitted"
+    DONE = "done"
+    ERROR = "error"
+
+
 class HordeJob:
     retry_interval: int = 1
 
     def __init__(self, session: aiohttp.ClientSession, id: str, model: str, prompt: str, negative_prompt: str, sampler: str, cfg_scale: float, seed: int, denoising_strength: float, n_iter: int, height: int, width: int, subseed: int, steps: int, karras: bool, tiling: bool, postprocessors: List[str], nsfw_censor: bool = False, source_image: Optional[Image.Image] = None, source_processing: Optional[str] = "img2img", source_mask: Optional[Image.Image] = None, r2_upload: Optional[str] = None):
+        self.status: JobStatus = JobStatus.PENDING
+        self.session = session
         self.id = id
         self.model = model
         self.prompt = prompt
@@ -86,7 +100,9 @@ class HordeJob:
         self.source_mask = source_mask
         self.r2_upload = r2_upload
 
-    async def submit(self, image: Image.Image, session: aiohttp.ClientSession):
+    async def submit(self, image: Image.Image):
+        self.status = JobStatus.SUBMITTING
+
         bytesio = io.BytesIO()
         image.save(bytesio, format="WebP", quality=95)
 
@@ -103,6 +119,8 @@ class HordeJob:
                         continue
             generation = "R2"
 
+            self.status = JobStatus.UPLOADED
+
         else:
             generation = base64.b64encode(bytesio.getvalue()).decode("utf8")
 
@@ -115,7 +133,7 @@ class HordeJob:
         attempts = 10
         while attempts > 0:
             try:
-                r = await session.post('/api/v2/generate/submit', json=post_data)
+                r = await self.session.post('/api/v2/generate/submit', json=post_data)
 
                 try:
                     res = await r.json()
@@ -125,7 +143,11 @@ class HordeJob:
                         return
 
                     if r.ok:
-                        return res.get("reward", None)
+                        self.status = JobStatus.SUBMITTED
+                        reward = res.get("reward", None)
+                        if reward:
+                            self.status = JobStatus.DONE
+                            return reward
                     else:
                         print(f"Failed to submit job with status code {r.status}: {res.get('message')}")
                         return None
@@ -138,6 +160,7 @@ class HordeJob:
                 await asyncio.sleep(self.retry_interval)
                 continue
 
+        self.status = JobStatus.ERROR
 
     @classmethod
     async def get(cls, session: aiohttp.ClientSession, config: StableHordeConfig, models: List[str]):
