@@ -13,9 +13,9 @@ body:
     id: no-duplicate-issues
     attributes:
       label: Is there existing issue for this?
-      description: Please search to see if an issue already exists for the feature you are suggesting, also this feature is not implemented in the latest commit.
+      description: Please search to see if an issue already exists for the feature you are suggesting, also checked the latest commit to make sure this feature is still not implemented.
       options:
-        - label: I checked and didn't find similar issue, also not implemented in the latest commit.
+        - label: I didn't find similar issue, also checked the latest commit.
           required: true
 
   - type: textarea
