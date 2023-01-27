@@ -171,7 +171,7 @@ class HordeJob:
         payload = req.get('payload')
         prompt = payload.get('prompt')
         if "###" in prompt:
-            prompt, negative = map(lambda x: x.strip(), prompt.split("###"))
+            prompt, negative = map(lambda x: x.strip(), prompt.rsplit(" ### ", 1))
         else:
             negative = ""
 
