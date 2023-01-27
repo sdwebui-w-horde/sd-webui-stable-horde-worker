@@ -1,2 +1,3 @@
 # Formatters and linters
+black ~= 22.0
 flake8
