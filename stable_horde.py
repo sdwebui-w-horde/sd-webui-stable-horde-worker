@@ -162,6 +162,14 @@ class HordeJob:
                         print(f"job {self.id} has been submitted already")
                         return
 
+                    if r.status == 500:
+                        print(
+                            f"Failed to submit job with status code {r.status}, retry!"
+                        )
+                        attempts -= 1
+                        await asyncio.sleep(self.retry_interval)
+                        continue
+
                     if r.ok:
                         return res.get("reward", None)
                     else:
@@ -219,7 +227,7 @@ class HordeJob:
         payload = req.get("payload")
         prompt = payload.get("prompt")
         if "###" in prompt:
-            prompt, negative = map(lambda x: x.strip(), prompt.split("###"))
+            prompt, negative = map(lambda x: x.strip(), prompt.rsplit("###", 1))
         else:
             negative = ""
 
