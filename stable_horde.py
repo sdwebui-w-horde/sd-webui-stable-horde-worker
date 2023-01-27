@@ -23,27 +23,32 @@ safety_checker = None
 
 
 class StableHordeConfig(object):
-    enabled: bool
-    endpoint: str
-    apikey: str
-    name: str
-    interval: int
-    max_pixels: int
-    nsfw: bool
-    allow_img2img: bool
-    allow_painting: bool
-    allow_unsafe_ipaddr: bool
-    allow_post_processing: bool
-    show_image_preview: bool
-    save_images: bool
-    save_images_folder: str
+    enabled: bool = False
+    endpoint: str = "https://stablehorde.net/"
+    apikey: str = "00000000"
+    name: str = ""
+    interval: int = 10
+    max_pixels: int = 1048576 # 1024x1024
+    nsfw: bool = False
+    allow_img2img: bool = True
+    allow_painting: bool = True
+    allow_unsafe_ipaddr: bool = True
+    allow_post_processing: bool = True
+    show_image_preview: bool = False
+    save_images: bool = False
+    save_images_folder: str = "horde"
 
     def __init__(self, basedir: str):
         self.basedir = basedir
         self.config = self.load()
 
-    def __getattr__(self, item: str):
-        return self.config.get(item, None)
+    def __getattribute__(self, item: str):
+        if item in ["config", "basedir"]:
+            return super().__getattribute__(item)
+        value = self.config.get(item, None)
+        if value is None:
+            return super().__getattribute__(item)
+        return value
 
     def __setattr__(self, key: str, value: Any):
         if key == "config" or key == "basedir":
