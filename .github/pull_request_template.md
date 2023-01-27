@@ -16,13 +16,13 @@ Note: You can install flake8 and black that we are using for linting the code wi
 
 <!-- Please select the type of change(s) made in this pull request, and delete inrelavant ones -->
 
-- [ ] Bugfix
-- [ ] Feature
-- [ ] Refactoring
-- [ ] Optimization
-- [ ] Documentation
-- [ ] CI/CD
-- [ ] Other
+- [ ] Bugfix <!-- non-breaking change which fixes an issue -->
+- [ ] Feature <!-- non-breaking change which adds functionality -->
+- [ ] Refactoring <!-- code style changes, refactoring, etc. -->
+- [ ] Optimization <!-- code performance improvements, etc. -->
+- [ ] Documentation <!-- changes to documentation only -->
+- [ ] CI/CD <!-- changes to CI/CD pipeline -->
+- [ ] Other <!-- please specify in the description below -->
 
 ## Description
 
