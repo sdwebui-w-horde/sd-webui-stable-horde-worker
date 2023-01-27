@@ -181,6 +181,12 @@ class HordeJob:
                     if r.status == 404:
                         print(f"job {self.id} has been submitted already")
                         return
+                        
+                    if r.status == 500:
+                        print(f"Failed to submit job with status code {r.status}, retry!")
+                        attempts -= 1
+                        await asyncio.sleep(self.retry_interval)
+                        continue
 
                     if r.ok:
                         return res.get("reward", None)
