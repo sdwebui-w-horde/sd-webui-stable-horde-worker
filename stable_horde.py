@@ -452,6 +452,7 @@ class StableHorde:
                     extras_upscaler_2_visibility=0.0,
                     gfpgan_visibility=0.0, codeformer_visibility=0.0, codeformer_weight=0.0,
                     image_folder="", input_dir="", output_dir="",
+                    save_output=False,
                 )
 
             image = images[0]
