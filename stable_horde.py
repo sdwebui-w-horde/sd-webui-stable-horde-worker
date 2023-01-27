@@ -43,7 +43,7 @@ class StableHordeConfig(object):
         self.config = self.load()
 
     def __getattribute__(self, item: str):
-        if item in ["config", "basedir"]:
+        if item in ["config", "basedir", "load", "save"]:
             return super().__getattribute__(item)
         value = self.config.get(item, None)
         if value is None:
