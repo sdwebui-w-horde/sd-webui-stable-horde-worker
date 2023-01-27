@@ -74,6 +74,7 @@ body:
     id: os
     attributes:
       label: What operating system are you seeing the problem on?
+      multiple: true
       options:
         - Windows 11 / 10 / 8
         - Windows 7 or below
