@@ -7,8 +7,8 @@ Note: You can install flake8 and black that we are using for linting the code wi
 
 - [ ] I've checked that this isn't a duplicate pull request.
 - [ ] I've tested my changes with the latest SD-Webui version.
-- [ ] "I've format my code with [black](https://black.readthedocs.io/): `black .`"
-- [ ] "I've lint my code with [flake8](https://flake8.pycqa.org/): `flake8 .`"
+- [ ] I've format my code with [black](https://black.readthedocs.io/): `black .`
+- [ ] I've lint my code with [flake8](https://flake8.pycqa.org/): `flake8 .`
 - [ ] I've read the [Contribution Guidelines](https://github.com/sdwebui-w-horde/sd-webui-stable-horde-worker/blob/master/CONTRIBUTING.md)
 - [ ] I've read the [Code of Conduct](https://github.com/sdwebui-w-horde/.github/blob/master/CODE_OF_CONDUCT.md)
 
