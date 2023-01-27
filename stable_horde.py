@@ -229,7 +229,7 @@ class HordeJob:
         attempts = 10
         while attempts > 0:
             try:
-                r = await self.session.post('/api/v2/generate/submit', json=post_data)
+                r = await self.session.post("/api/v2/generate/submit", json=post_data)
 
                 try:
                     res = await r.json()
