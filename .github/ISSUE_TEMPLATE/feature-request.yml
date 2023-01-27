@@ -30,7 +30,7 @@ body:
   - type: textarea
     id: solution
     attributes:
-      label: Solution
+      label: Proposed Solution
       description: A clear and concise description of how do you implement this feature.
       placeholder: Tell us how you want it to work!
     validations:
