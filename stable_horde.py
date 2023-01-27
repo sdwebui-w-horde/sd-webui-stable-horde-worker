@@ -14,6 +14,7 @@ from diffusers.pipelines.stable_diffusion.safety_checker import (
 from PIL import Image
 from transformers.models.auto.feature_extraction_auto import AutoFeatureExtractor
 
+from modules.images import save_image
 from modules import (
     shared,
     call_queue,
@@ -33,42 +34,99 @@ safety_feature_extractor = None
 safety_checker = None
 
 
-class StableHordeConfig:
+class StableHordeConfig(object):
+    enabled: bool = False
+    endpoint: str = "https://stablehorde.net/"
+    apikey: str = "00000000"
+    name: str = ""
+    interval: int = 10
+    max_pixels: int = 1048576  # 1024x1024
+    nsfw: bool = False
+    allow_img2img: bool = True
+    allow_painting: bool = True
+    allow_unsafe_ipaddr: bool = True
+    allow_post_processing: bool = True
+    show_image_preview: bool = False
+    save_images: bool = False
+    save_images_folder: str = "horde"
+
     def __init__(self, basedir: str):
         self.basedir = basedir
-        self.models = []
+        self.config = self.load()
+
+    def __getattribute__(self, item: str):
+        if item in ["config", "basedir", "load", "save"]:
+            return super().__getattribute__(item)
+        value = self.config.get(item, None)
+        if value is None:
+            return super().__getattribute__(item)
+        return value
+
+    def __setattr__(self, key: str, value: Any):
+        if key == "config" or key == "basedir":
+            super().__setattr__(key, value)
+        else:
+            self.config[key] = value
+            self.save()
+
+    def load(self):
+        if not path.exists(path.join(self.basedir, "config.json")):
+            self.config = {
+                "enabled": False,
+                "allow_img2img": True,
+                "allow_painting": True,
+                "allow_unsafe_ipaddr": True,
+                "allow_post_processing": True,
+                "show_image_preview": False,
+                "save_images": False,
+                "save_images_folder": "horde",
+                "endpoint": "https://stablehorde.net/",
+                "apikey": "00000000",
+                "name": "",
+                "interval": 10,
+                "max_pixels": 1048576,
+                "nsfw": False,
+            }
+            self.save()
+
+        with open(path.join(self.basedir, "config.json"), "r") as f:
+            return json.load(f)
+
+    def save(self):
+        with open(path.join(self.basedir, "config.json"), "w") as f:
+            json.dump(self.config, f, indent=2)
+
+
+class State:
+    def __init__(self):
+        self._status = ""
+        self.id: Optional[str] = None
+        self.prompt: Optional[str] = None
+        self.negative_prompt: Optional[str] = None
+        self.scale: Optional[float] = None
+        self.steps: Optional[int] = None
+        self.sampler: Optional[str] = None
+        self.image: Optional[Image.Image] = None
 
     @property
-    def endpoint(self) -> str:
-        return shared.opts.stable_horde_endpoint
+    def status(self):
+        return self._status
 
-    @property
-    def apikey(self) -> str:
-        return shared.opts.stable_horde_apikey
+    @status.setter
+    def status(self, value):
+        self._status = value
+        if shared.cmd_opts.nowebui:
+            print(value)
 
-    @property
-    def name(self) -> str:
-        return shared.opts.stable_horde_name
-
-    @property
-    def max_pixels(self) -> int:
-        return int(shared.opts.stable_horde_max_pixels)
-
-    @property
-    def nsfw(self) -> bool:
-        return shared.opts.stable_horde_nsfw
-
-    @property
-    def allow_img2img(self) -> bool:
-        return shared.opts.stable_horde_allow_img2img
-
-    @property
-    def allow_painting(self) -> bool:
-        return shared.opts.stable_horde_allow_painting
-
-    @property
-    def allow_unsafe_ipaddr(self) -> bool:
-        return shared.opts.stable_horde_allow_unsafe_ipaddr
+    def to_dict(self):
+        return {
+            "status": self.status,
+            "prompt": self.prompt,
+            "negative_prompt": self.negative_prompt,
+            "scale": self.scale,
+            "steps": self.steps,
+            "sampler": self.sampler,
+        }
 
 
 class HordeJob:
@@ -263,7 +321,8 @@ class HordeJob:
 
 
 class StableHorde:
-    def __init__(self, config: StableHordeConfig):
+    def __init__(self, basedir: str, config: StableHordeConfig):
+        self.basedir = basedir
         self.config = config
         self.session: Optional[aiohttp.ClientSession] = None
 
@@ -272,9 +331,12 @@ class StableHorde:
         )
 
         self.supported_models = []
+        self.current_models = []
+
+        self.state = State()
 
     async def get_supported_models(self):
-        filepath = path.join(self.config.basedir, "stablehorde_supported_models.json")
+        filepath = path.join(self.basedir, "stablehorde_supported_models.json")
         if not path.exists(filepath):
             async with aiohttp.ClientSession() as session:
                 async with session.get(stable_horde_supported_models_url) as resp:
@@ -305,9 +367,9 @@ class StableHorde:
                 continue
 
             if local_hash == remote_hash:
-                self.config.models = [model["name"]]
+                self.current_models = [model["name"]]
 
-        if len(self.config.models) == 0:
+        if len(self.current_models) == 0:
             return f"Current model {model_checkpoint} not found on StableHorde"
 
     async def run(self):
@@ -316,15 +378,16 @@ class StableHorde:
         while True:
             result = self.detect_current_model()
             if result is not None:
+                self.state.status = result
                 # Wait 10 seconds before retrying to detect the current model
                 # if the current model is not listed in the Stable Horde supported
                 # models, we don't want to spam the server with requests
                 await asyncio.sleep(10)
                 continue
 
-            await asyncio.sleep(shared.opts.stable_horde_interval)
+            await asyncio.sleep(self.config.interval)
 
-            if shared.opts.stable_horde_enable:
+            if self.config.enabled:
                 try:
                     req = await HordeJob.get(
                         await self.get_session(), self.config, self.config.models
@@ -402,12 +465,12 @@ class StableHorde:
     async def handle_request(self, job: HordeJob):
         self.patch_sampler_names()
 
-        print(f"Get popped generation request {job.id}")
+        self.state.status = f"Get popped generation request {job.id}"
         sampler_name = job.sampler
         if sampler_name == "k_dpm_adaptive":
             sampler_name = "k_dpm_ad"
         if sampler_name not in sd_samplers.samplers_map:
-            print(f"ERROR: Unknown sampler {sampler_name}")
+            self.state.status = f"ERROR: Unknown sampler {sampler_name}"
             return
         if job.karras:
             sampler_name += "_ka"
@@ -498,9 +561,37 @@ class StableHorde:
 
             image = images[0]
 
+        # Saving image locally
+        infotext = (
+            processing.create_infotext(
+                p, p.all_prompts, p.all_seeds, p.all_subseeds, "Stable Horde", 0, 0
+            )
+            if shared.opts.enable_pnginfo
+            else None
+        )
+        if self.config.save_images:
+            save_image(
+                image,
+                self.config.save_images_folder,
+                "",
+                job.seed,
+                job.prompt,
+                "png",
+                info=infotext,
+                p=p,
+            )
+
+        self.state.id = job.id
+        self.state.prompt = job.prompt
+        self.state.negative_prompt = job.negative_prompt
+        self.state.scale = job.cfg_scale
+        self.state.steps = job.steps
+        self.state.sampler = sampler_name
+        self.state.image = image
+
         res = await job.submit(image, await self.get_session())
         if res:
-            print(f"Submission accepted, reward {res} received.")
+            self.state.status = f"Submission accepted, reward {res} received."
 
     # check and replace nsfw content
     def check_safety(self, x_image):
@@ -534,11 +625,11 @@ class StableHorde:
 
     def handle_error(self, status: int, res: Dict[str, Any]):
         if status == 401:
-            print("ERROR: Invalid API Key")
+            self.state.status = "ERROR: Invalid API Key"
         elif status == 403:
-            print(f"ERROR: Access Denied. ({res.get('message', '')})")
+            self.state.status = f"ERROR: Access Denied. ({res.get('message', '')})"
         elif status == 404:
-            print("ERROR: Request Not Found")
+            self.state.status = "ERROR: Request Not Found"
         else:
-            print(f"ERROR: Unknown Error {status}")
-            print(res)
+            self.state.status = f"ERROR: Unknown Error {status}"
+            print(f"ERROR: Unknown Error, {res}")
