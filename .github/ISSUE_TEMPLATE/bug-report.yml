@@ -1,0 +1,116 @@
+name: Bug Report
+description: File a bug report
+title: "[Bug]: "
+labels: ["bug"]
+assignees:
+  - MaikoTan
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to fill out this bug report!
+        
+  - type: checkboxes
+    id: no-duplicate-issues
+    attributes:
+      label: Is there existing issue for this?
+      description: Please search to see if an issue already exists for the bug you encountered.
+      options:
+        - label: I checked and didn't find similar issue
+          required: true
+
+  - type: checkboxes
+    id: happen-on-latest
+    attributes:
+      label: Does this happen on the latest commit?
+      description: |
+        If you are not on the latest commit, please try updating to see if the issue is resolved.
+      options:
+        - label: I have confirmed this happens on the latest commit
+          required: true
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: A clear and concise description of what the bug is.
+      placeholder: Tell us what you see!
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: |
+        How do we reproduce the issue?
+        Please provide detailed steps for reproducing the issue.
+      placeholder: |
+        1. Go to '...'
+        2. Click on '....'
+        3. Scroll down to '....'
+        4. See error
+
+  - type: textarea
+    id: what-expected
+    attributes:
+      label: What did you expect to happen?
+      description: A clear and concise description of what you expected to happen.
+      placeholder: Tell us what you expected!
+    validations:
+      required: true
+
+  - type: input
+    id: sd-webui-commit
+    attributes:
+      label: Stable Diffusion WebUI Commit SHA
+      description: |
+        Which commit of Stable Diffusion WebUI are you running?
+        You can copy the SHA from the bottom of the WebUI, or the top of the terminal output.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: What operating system are you seeing the problem on?
+      options:
+        - Windows 11 / 10 / 8
+        - Windows 7 or below
+        - macOS
+        - Debian / Ubuntu
+        - Other Linux
+        - Other
+    validations:
+      required: true
+  
+  - type: dropdown
+    id: browsers
+    attributes:
+      label: What browsers are you seeing the problem on?
+      multiple: true
+      options:
+        - Firefox
+        - Chrome
+        - Safari
+        - Microsoft Edge
+        - Other
+    validations:
+      required: true
+  
+  - type: textarea
+    id: additional-info
+    attributes:
+      label: Additional information
+      description: |
+        Add any other context about the problem here.
+        If you have any logs or screenshots, please attach them here.
+ 
+  # - type: checkboxes
+  #   id: terms
+  #   attributes:
+  #     label: Code of Conduct
+  #     description: By submitting this issue, you agree to follow our [Code of Conduct](https://example.com)
+  #     options:
+  #       - label: I agree to follow this project's Code of Conduct
+  #         required: true
