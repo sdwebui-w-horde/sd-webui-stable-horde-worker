@@ -3,7 +3,7 @@ from typing import Optional
 from fastapi import FastAPI
 import gradio as gr
 
-from modules import scripts, script_callbacks, shared
+from modules import scripts, script_callbacks
 
 from stable_horde import StableHorde, StableHordeConfig
 
@@ -30,7 +30,6 @@ def apply_stable_horde_settings(
     interval: int,
     max_pixels: str,
     endpoint: str,
-    model_selection: list,
     show_images: bool,
     save_images: bool,
     save_images_folder: str,
@@ -134,13 +133,6 @@ def on_ui_tabs():
                             elem_id=tab_prefix + "save-images-folder",
                         )
 
-                    with gr.Row():
-                        model_selection = gr.CheckboxGroup(
-                            choices=shared.list_checkpoint_tiles(),
-                            value=[shared.list_checkpoint_tiles()[0]],
-                            label="Model Selection",
-                        )
-
                 with gr.Column():
                     show_images = gr.Checkbox(
                         config.show_image_preview, label="Show Images"
@@ -213,7 +205,6 @@ def on_ui_tabs():
                 interval,
                 max_pixels,
                 endpoint,
-                model_selection,
                 show_images,
                 save_images,
                 save_images_folder,
