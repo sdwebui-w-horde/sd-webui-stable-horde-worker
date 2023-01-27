@@ -390,7 +390,7 @@ class StableHorde:
             if self.config.enabled:
                 try:
                     req = await HordeJob.get(
-                        await self.get_session(), self.config, self.config.models
+                        await self.get_session(), self.config, self.current_models
                     )
                     if req is None:
                         continue
