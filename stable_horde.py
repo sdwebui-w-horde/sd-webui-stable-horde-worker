@@ -613,7 +613,7 @@ class StableHorde:
         self.state.sampler = sampler_name
         self.state.image = image
 
-        res = await job.submit(image, await self.get_session())
+        res = await job.submit(image)
         if res:
             self.state.status = f"Submission accepted, reward {res} received."
 
