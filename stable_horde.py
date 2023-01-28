@@ -276,8 +276,17 @@ class HordeJob:
         config: StableHordeConfig,
         models: List[str],
     ):
-        name = "Stable Horde Worker Bridge for Stable Diffusion WebUI"
-        version = 10
+        # Stable Horde uses a bridge version to differentiate between different
+        # bridge agents which is used to determine the bridge agent's capabilities.
+        # We should increment the version number when we add new features to the bridge
+        # agent.
+        #
+        # When we increment the version number, we should also update the AI-Horde side:
+        # https://github.com/db0/AI-Horde/blob/main/horde/bridge_reference.py
+        #
+        # 1 - img2img, inpainting, karras, r2, CodeFormers
+        version = 1
+        name = "SD-WebUI Stable Horde Worker Bridge"
         repo = "https://github.com/sdwebui-w-horde/sd-webui-stable-horde-worker"
         # https://stablehorde.net/api/
         post_data = {
