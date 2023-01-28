@@ -6,6 +6,12 @@
 
 # SD WebUI ❤️ Stable Horde
 
+![python](https://img.shields.io/badge/python-3.10-blue)
+[![issues](https://img.shields.io/github/issues/sdwebui-w-horde/sd-webui-stable-horde-worker)](https://github.com/sdwebui-w-horde/sd-webui-stable-horde-worker/issues)
+[![pr](https://img.shields.io/github/issues-pr/sdwebui-w-horde/sd-webui-stable-horde-worker)](https://github.com/sdwebui-w-horde/sd-webui-stable-horde-worker/pulls)
+[![license](https://img.shields.io/github/license/sdwebui-w-horde/sd-webui-stable-horde-worker)](LICENSE)
+[![Lint](https://github.com/sdwebui-w-horde/sd-webui-stable-horde-worker/actions/workflows/lint.yml/badge.svg)](https://github.com/sdwebui-w-horde/sd-webui-stable-horde-worker/actions/workflows/lint.yml)
+
 ✨ *Stable Horde Worker Bridge for Stable Diffusion WebUI* ✨
 
 </div>
@@ -19,24 +25,32 @@ An unofficial [Stable Horde](https://stablehorde.net/) worker bridge as a [Stabl
 - Get jobs from Stable Horde, generate images and submit generations
 - Configurable interval between every jobs
 - Enable and disable extension whenever
+- Detect current model and fetch corresponding jobs on the fly
+- Show generation images in the Stable Diffusion WebUI
+- Save generation images with png info text to local
 
 ## Install
 
-Run the following command in the root directory of your Stable Diffusion WebUI installation:
+- Run the following command in the root directory of your Stable Diffusion WebUI installation:
 
-```bash
-git clone https://github.com/sdwebui-w-horde/sd-webui-stable-horde-worker.git extensions/stable-horde-worker
-```
+  ```bash
+  git clone https://github.com/sdwebui-w-horde/sd-webui-stable-horde-worker.git extensions/stable-horde-worker
+  ```
 
-Then, launch the Stable Diffusion WebUI. And then, go to `Settings` tab page, you would see the `Stable Horde` section.
+- Launch the Stable Diffusion WebUI, You would see the `Stable Horde Worker` tab page.
 
-![settings](./screenshots/settings.png)
+  ![settings](./screenshots/settings.png)
 
-Setup your `API key` and `Worker name` from [Stable Horde](https://stablehorde.net/) and click the `Apply settings` buttons.
+- Register an account on [Stable Horde](https://stablehorde.net/) and get your `API key` if you don't have one.
 
-Click the `Enable` checkbox to enable the Stable Horde worker client.
+  **Note**: the default anonymous key `00000000` is not working for a worker, you need to register an account and get your own key.
 
-### Existing issues
+- Setup your `API key` here.
+- Setup `Worker name` here with a proper name.
+- Make sure `Enable` is checked.
+- Click the `Apply settings` buttons.
 
-- only one model is usable
-- [model should be selected manually](https://github.com/sdwebui-w-horde/sd-webui-stable-horde-worker/issues/3)
+
+## License
+
+This project is licensed under the terms of the [AGPL-3.0 License](LICENSE).
