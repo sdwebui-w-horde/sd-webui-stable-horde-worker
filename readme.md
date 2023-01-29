@@ -50,6 +50,136 @@ An unofficial [Stable Horde](https://stablehorde.net/) worker bridge as a [Stabl
 - Make sure `Enable` is checked.
 - Click the `Apply settings` buttons.
 
+## Compatibility
+
+Here is the compatibilities with the [official bridge](https://github.com/db0/AI-Horde-Worker).
+
+|Features|Supported?|
+|:-:|:-:|
+|img2img|✔️|
+|inpainting|✔️|
+|interrogate|❌|
+|karras|⭕*|
+|r2 uploading|✔️|
+|tiling|❌|
+
+* Karras scheduler is partially supported in SD-WebUI Bridge, see below.
+
+<table>
+  <thead>
+    <tr>
+      <th rowspan="2">Samplers</th>
+      <th colspan="2">Official Bridge</th>
+      <th colspan="2">SD-WebUI Bridge</th>
+    </tr>
+    <tr>
+      <th>No Karras</th>
+      <th>Karras</th>
+      <th>No Karras</th>
+      <th>Karras</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td align="center">k_lms</td>
+      <td align="center">✔️</td>
+      <td align="center">✔️</td>
+      <td align="center">✔️</td>
+      <td align="center">✔️</td>
+    </tr>
+    <tr>
+      <td align="center">k_heun</td>
+      <td align="center">✔️</td>
+      <td align="center">✔️</td>
+      <td align="center">✔️</td>
+      <td align="center">✔️</td>
+    </tr>
+    <tr>
+      <td align="center">k_euler</td>
+      <td align="center">✔️</td>
+      <td align="center">✔️</td>
+      <td align="center">✔️</td>
+      <td align="center">✔️</td>
+    </tr>
+    <tr>
+      <td align="center">k_euler_a</td>
+      <td align="center">✔️</td>
+      <td align="center">✔️</td>
+      <td align="center">✔️</td>
+      <td align="center">✔️</td>
+    </tr>
+    <tr>
+      <td align="center">k_dpm_2</td>
+      <td align="center">✔️</td>
+      <td align="center">✔️</td>
+      <td align="center">✔️</td>
+      <td align="center">✔️</td>
+    </tr>
+    <tr>
+      <td align="center">k_dpm_2_a</td>
+      <td align="center">✔️</td>
+      <td align="center">✔️</td>
+      <td align="center">✔️</td>
+      <td align="center">✔️</td>
+    </tr>
+    <tr>
+      <td align="center">k_dpm_fast</td>
+      <td align="center">✔️</td>
+      <td align="center">✔️</td>
+      <td align="center">✔️</td>
+      <td align="center">✔️</td>
+    </tr>
+    <tr>
+      <td align="center">k_dpm_adaptive</td>
+      <td align="center">✔️</td>
+      <td align="center">✔️</td>
+      <td align="center">✔️</td>
+      <td align="center">✔️</td>
+    </tr>
+    <tr>
+      <td align="center">k_dpmpp_2s_a</td>
+      <td align="center">✔️</td>
+      <td align="center">✔️</td>
+      <td align="center">✔️</td>
+      <td align="center">✔️</td>
+    </tr>
+    <tr>
+      <td align="center">k_dpmpp_2m</td>
+      <td align="center">✔️</td>
+      <td align="center">✔️</td>
+      <td align="center">✔️</td>
+      <td align="center">✔️</td>
+    </tr>
+    <tr>
+      <td align="center">k_dpmpp_sde</td>
+      <td align="center">✔️</td>
+      <td align="center">✔️</td>
+      <td align="center">✔️</td>
+      <td align="center">✔️</td>
+    </tr>
+    <tr>
+      <td align="center">dpmsolver</td>
+      <td align="center">✔️</td>
+      <td align="center">✔️</td>
+      <td align="center">❌</td>
+      <td align="center">❌</td>
+    </tr>
+    <tr>
+      <td align="center">ddim</td>
+      <td align="center">❌</td>
+      <td align="center">❌</td>
+      <td align="center">✔️</td>
+      <td align="center">❌</td>
+    </tr>
+    <tr>
+      <td align="center">plms</td>
+      <td align="center">❌</td>
+      <td align="center">❌</td>
+      <td align="center">✔️</td>
+      <td align="center">❌</td>
+    </tr>
+  </tbody>
+</table>
 
 ## License
 
