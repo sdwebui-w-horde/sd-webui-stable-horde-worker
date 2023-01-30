@@ -81,16 +81,26 @@ class StableHorde:
         self.state = State()
 
     async def get_supported_models(self):
-        filepath = path.join(self.basedir, "stablehorde_supported_models.json")
-        if not path.exists(filepath):
+        attempts = 10
+        while attempts > 0:
+            attempts -= 1
             async with aiohttp.ClientSession() as session:
-                async with session.get(stable_horde_supported_models_url) as resp:
-                    with open(filepath, "wb") as f:
-                        f.write(await resp.read())
-        with open(filepath, "r") as f:
-            supported_models: Dict[str, Any] = json.load(f)
+                try:
+                    async with session.get(stable_horde_supported_models_url) as resp:
+                        if resp.status != 200:
+                            raise aiohttp.ClientError()
+                        data = await resp.text()
+                        supported_models: Dict[str, Any] = json.loads(data)
 
-        self.supported_models = list(supported_models.values())
+                        self.supported_models = list(supported_models.values())
+                        return
+                except Exception:
+                    print(
+                        f"Failed to get supported models, retrying in 1 second... \
+                            ({attempts} attempts left"
+                    )
+                    await asyncio.sleep(1)
+        raise Exception("Failed to get supported models after 10 attempts")
 
     def detect_current_model(self):
         def get_md5sum(filepath):
