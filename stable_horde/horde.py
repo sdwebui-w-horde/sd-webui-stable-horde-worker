@@ -161,6 +161,7 @@ class StableHorde:
         but are not included in the default sd_samplers module.
         """
         from modules import sd_samplers
+
         try:
             # Old versions of webui put every samplers in `modules.sd_samplers`
             # But the newer version split them into several files
