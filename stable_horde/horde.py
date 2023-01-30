@@ -164,7 +164,7 @@ class StableHorde:
         try:
             # Old versions of webui put every samplers in `modules.sd_samplers`
             # But the newer version split them into several files
-            # Happened in https://github.com/AUTOMATIC1111/stable-diffusion-webui/commit/4df63d2d197f26181758b5108f003f225fe84874
+            # Happened in https://github.com/AUTOMATIC1111/stable-diffusion-webui/commit/4df63d2d197f26181758b5108f003f225fe84874 # noqa E501
             from modules.sd_samplers import KDiffusionSampler, SamplerData
         except ImportError:
             from modules.sd_samplers_kdiffusion import KDiffusionSampler
