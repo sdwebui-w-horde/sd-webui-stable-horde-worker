@@ -11,7 +11,7 @@ from diffusers.pipelines.stable_diffusion.safety_checker import (
     StableDiffusionSafetyChecker,
 )
 from PIL import Image
-from transformers.models.auto.feature_extraction_auto import AutoFeatureExtractor
+from transformers import AutoFeatureExtractor
 
 from modules.images import save_image
 from modules import (
@@ -29,8 +29,8 @@ stable_horde_supported_models_url = (
 )
 
 safety_model_id = "CompVis/stable-diffusion-safety-checker"
-safety_feature_extractor = None
-safety_checker = None
+safety_feature_extractor = AutoFeatureExtractor.from_pretrained(safety_model_id)
+safety_checker = StableDiffusionSafetyChecker.from_pretrained(safety_model_id)
 
 
 class State:
@@ -340,16 +340,6 @@ class StableHorde:
 
     # check and replace nsfw content
     def check_safety(self, x_image):
-        global safety_feature_extractor, safety_checker
-
-        if safety_feature_extractor is None:
-            safety_feature_extractor = AutoFeatureExtractor.from_pretrained(
-                safety_model_id
-            )
-            safety_checker = StableDiffusionSafetyChecker.from_pretrained(
-                safety_model_id
-            )
-
         safety_checker_input = safety_feature_extractor(x_image, return_tensors="pt")
         image, has_nsfw_concept = safety_checker(
             images=x_image, clip_input=safety_checker_input.pixel_values
