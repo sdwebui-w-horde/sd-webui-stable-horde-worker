@@ -23,6 +23,7 @@ class JobStatus(Enum):
 
 class HordeJob:
     retry_interval: int = 1
+    censored = False
 
     def __init__(
         self,
@@ -104,6 +105,7 @@ class HordeJob:
             "id": self.id,
             "generation": generation,
             "seed": self.seed,
+            "state": "censored" if self.censored else "ok",
         }
 
         attempts = 10
@@ -148,6 +150,29 @@ class HordeJob:
                 continue
 
         self.status = JobStatus.ERROR
+
+    async def error(self):
+        self.status = JobStatus.ERROR
+
+        post_data = {"id": self.id, "state": "faulted"}
+        attempts = 10
+        while attempts > 0:
+            try:
+                r = await self.session.post("/api/v2/generate/submit", json=post_data)
+                if r.ok:
+                    print("Successfully reported error to Stable Horde")
+                    return
+                else:
+                    res = await r.json()
+                    print(
+                        "Failed to report error with status code"
+                        + f"{r.status}: {res.get('message')}"
+                    )
+                    return
+            except aiohttp.ClientConnectorError:
+                attempts -= 1
+                await asyncio.sleep(self.retry_interval)
+                continue
 
     @classmethod
     async def get(
