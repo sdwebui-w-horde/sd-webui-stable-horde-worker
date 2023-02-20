@@ -200,7 +200,7 @@ class HordeJob:
             "nsfw": config.nsfw,
             "blacklist": [],
             "models": models,
-            # TODO: add bridge version 13 (clip_skip, hires_fix) and 14 (r2_source)
+            # TODO: add support for bridge version 13 (clip_skip, hires_fix) and 14 (r2_source)
             "bridge_version": 11,
             "bridge_agent": f"{name}:{version}:{repo}",
             "threads": 1,
