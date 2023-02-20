@@ -281,11 +281,15 @@ class StableHorde:
             if job.nsfw_censor:
                 x_image = np.array(processed.images[0])
                 image, has_nsfw = self.check_safety(x_image)
+                if has_nsfw:
+                    job.censored = True
 
             else:
                 image = processed.images[0]
 
-        if "GFPGAN" in postprocessors or "CodeFormers" in postprocessors:
+        if not has_nsfw and (
+            "GFPGAN" in postprocessors or "CodeFormers" in postprocessors
+        ):
             model = "CodeFormer" if "CodeFormers" in postprocessors else "GFPGAN"
             face_restorators = [x for x in shared.face_restorers if x.name() == model]
             if len(face_restorators) == 0:
