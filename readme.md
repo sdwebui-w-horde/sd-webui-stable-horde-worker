@@ -57,13 +57,19 @@ Here is the compatibilities with the [official bridge](https://github.com/db0/AI
 |Features|Supported?|
 |:-:|:-:|
 |img2img|✔️|
-|inpainting|✔️|
-|interrogate|❌|
-|karras|⭕*|
-|r2 uploading|✔️|
-|tiling|✔️|
+|Inpainting|✔️|
+|Interrogate|❌|
+|Tiling|✔️|
+|Hi-res Fix|❌|
+|Clip Skip|❌|
+|Face Restoration (GFPGAN)|✔️|
+|Upscale (ESRGAN)|✔️|
+|Sample Karras Scheduler|⭕*|
+|R2 upload|✔️|
+|R2 source image|❌|
+|Multiple Models|❌|
 
-* Karras scheduler is partially supported in SD-WebUI Bridge, see below.
+\* Karras scheduler is partially supported in SD-WebUI Bridge, see below.
 
 <table>
   <thead>
