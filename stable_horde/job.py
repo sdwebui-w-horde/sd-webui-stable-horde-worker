@@ -226,8 +226,8 @@ class HordeJob:
             postprocessors=payload.get("post_processing", []),
             nsfw_censor=payload.get("use_nsfw_censor", False),
             model=req["model"],
-            source_image=to_image(payload.get("source_image")),
-            source_processing=payload.get("source_processing"),
-            source_mask=to_image(payload.get("source_mask")),
-            r2_upload=payload.get("r2_upload"),
+            source_image=to_image(req.get("source_image")),
+            source_processing=req.get("source_processing"),
+            source_mask=to_image(req.get("source_mask")),
+            r2_upload=req.get("r2_upload"),
         )
