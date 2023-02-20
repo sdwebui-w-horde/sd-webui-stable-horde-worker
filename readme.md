@@ -61,7 +61,7 @@ Here is the compatibilities with the [official bridge](https://github.com/db0/AI
 |interrogate|❌|
 |karras|⭕*|
 |r2 uploading|✔️|
-|tiling|❌|
+|tiling|✔️|
 
 * Karras scheduler is partially supported in SD-WebUI Bridge, see below.
 

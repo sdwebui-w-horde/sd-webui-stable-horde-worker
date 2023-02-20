@@ -256,6 +256,7 @@ class StableHorde:
             "width": job.width,
             "subseed": job.subseed,
             "steps": job.steps,
+            "tiling": job.tiling,
             "n_iter": job.n_iter,
             "do_not_save_samples": True,
             "do_not_save_grid": True,
