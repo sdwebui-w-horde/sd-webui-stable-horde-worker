@@ -66,7 +66,6 @@ class HordeJob:
         self.subseed = subseed
         self.steps = steps
         self.karras = karras
-        # TODO: add support for bridge version 11 "tiling"
         self.tiling = tiling
         self.postprocessors = postprocessors
         self.nsfw_censor = nsfw_censor
@@ -190,7 +189,8 @@ class HordeJob:
         # https://github.com/db0/AI-Horde/blob/main/horde/bridge_reference.py
         #
         # 1 - img2img, inpainting, karras, r2, CodeFormers
-        version = 1
+        # 2 - tiling
+        version = 2
         name = "SD-WebUI Stable Horde Worker Bridge"
         repo = "https://github.com/sdwebui-w-horde/sd-webui-stable-horde-worker"
         # https://stablehorde.net/api/
@@ -200,8 +200,8 @@ class HordeJob:
             "nsfw": config.nsfw,
             "blacklist": [],
             "models": models,
-            # TODO: add support for bridge version 11 "tiling"
-            "bridge_version": 9,
+            # TODO: add bridge version 13 (clip_skip, hires_fix) and 14 (r2_source)
+            "bridge_version": 11,
             "bridge_agent": f"{name}:{version}:{repo}",
             "threads": 1,
             "max_pixels": config.max_pixels,
