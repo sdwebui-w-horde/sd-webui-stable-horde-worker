@@ -190,7 +190,8 @@ class HordeJob:
         #
         # 1 - img2img, inpainting, karras, r2, CodeFormers
         # 2 - tiling
-        version = 2
+        # 3 - r2 source
+        version = 3
         name = "SD-WebUI Stable Horde Worker Bridge"
         repo = "https://github.com/sdwebui-w-horde/sd-webui-stable-horde-worker"
         # https://stablehorde.net/api/
@@ -228,10 +229,24 @@ class HordeJob:
         else:
             negative = ""
 
-        def to_image(base64str: Optional[str]) -> Optional[Image.Image]:
+        async def to_image(base64str: Optional[str]) -> Optional[Image.Image]:
             if not base64str:
                 return None
-            return Image.open(io.BytesIO(base64.b64decode(base64str)))
+            # support for r2 source, which is a url rather than a base64 string
+            if base64str.startswith("http"):
+                async with aiohttp.ClientSession() as session:
+                    attempts = 10
+                    while attempts > 0:
+                        try:
+                            r = await session.get(base64str)
+                            return Image.open(await r.read())
+                        except aiohttp.ClientConnectorError:
+                            attempts -= 1
+                            await asyncio.sleep(1)
+                            continue
+                    raise Exception("Failed to download source image")
+
+            return Image.open(base64.b64decode(base64str))
 
         return cls(
             session=session,
@@ -252,8 +267,8 @@ class HordeJob:
             postprocessors=payload.get("post_processing", []),
             nsfw_censor=payload.get("use_nsfw_censor", False),
             model=req["model"],
-            source_image=to_image(req.get("source_image")),
+            source_image=await to_image(req.get("source_image")),
             source_processing=req.get("source_processing"),
-            source_mask=to_image(req.get("source_mask")),
+            source_mask=await to_image(req.get("source_mask")),
             r2_upload=req.get("r2_upload"),
         )
