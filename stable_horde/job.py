@@ -45,6 +45,7 @@ class HordeJob:
         tiling: bool,
         postprocessors: List[str],
         nsfw_censor: bool = False,
+        clip_skip: int = 0,
         source_image: Optional[Image.Image] = None,
         source_processing: Optional[str] = "img2img",
         source_mask: Optional[Image.Image] = None,
@@ -69,6 +70,7 @@ class HordeJob:
         self.tiling = tiling
         self.postprocessors = postprocessors
         self.nsfw_censor = nsfw_censor
+        self.clip_skip = clip_skip
         self.source_image = source_image
         self.source_processing = (
             source_processing  # "img2img", "inpainting", "outpainting"
@@ -249,6 +251,7 @@ class HordeJob:
             steps=payload.get("ddim_steps", 30),
             karras=payload.get("karras", False),
             tiling=payload.get("tiling", False),
+            clip_skip=payload.get("clip_skip", 1),
             postprocessors=payload.get("post_processing", []),
             nsfw_censor=payload.get("use_nsfw_censor", False),
             model=req["model"],
