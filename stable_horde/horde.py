@@ -273,7 +273,19 @@ class StableHorde:
 
         with call_queue.queue_lock:
             shared.state.begin()
+            # hijack clip skip
+            hijacked = False
+            old_clip_skip = shared.opts.CLIP_stop_at_last_layers
+            if (
+                job.clip_skip >= 1
+                and job.clip_skip != shared.opts.CLIP_stop_at_last_layers
+            ):
+                shared.opts.CLIP_stop_at_last_layers = job.clip_skip
+                hijacked = True
             processed = processing.process_images(p)
+
+            if hijacked:
+                shared.opts.CLIP_stop_at_last_layers = old_clip_skip
             shared.state.end()
 
         has_nsfw = False
