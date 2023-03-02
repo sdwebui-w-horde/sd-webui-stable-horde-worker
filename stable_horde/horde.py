@@ -25,7 +25,7 @@ from modules import (
 )
 
 stable_horde_supported_models_url = (
-    "https://raw.githubusercontent.com/Sygil-Dev/nataili-model-reference/main/db.json"
+    "https://raw.githubusercontent.com/db0/AI-Horde-image-model-reference/main/db.json"
 )
 
 safety_model_id = "CompVis/stable-diffusion-safety-checker"
