@@ -18,6 +18,7 @@ class StableHordeConfig(object):
     show_image_preview: bool = False
     save_images: bool = False
     save_images_folder: str = "horde"
+    current_models: dict = {}
 
     def __init__(self, basedir: str):
         self.basedir = basedir

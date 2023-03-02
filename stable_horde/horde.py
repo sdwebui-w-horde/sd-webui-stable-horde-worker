@@ -25,12 +25,19 @@ from modules import (
 )
 
 stable_horde_supported_models_url = (
-    "https://raw.githubusercontent.com/Sygil-Dev/nataili-model-reference/main/db.json"
+    "https://raw.githubusercontent.com/db0/AI-Horde-image-model-reference/main/db.json"
 )
 
 safety_model_id = "CompVis/stable-diffusion-safety-checker"
 safety_feature_extractor = None
 safety_checker = None
+
+
+def get_md5sum(filepath):
+    import hashlib
+
+    with open(filepath, "rb") as f:
+        return hashlib.md5(f.read()).hexdigest()
 
 
 class State:
@@ -76,7 +83,7 @@ class StableHorde:
         )
 
         self.supported_models = []
-        self.current_models = []
+        self.current_models = {}
 
         self.state = State()
 
@@ -103,12 +110,6 @@ class StableHorde:
         raise Exception("Failed to get supported models after 10 attempts")
 
     def detect_current_model(self):
-        def get_md5sum(filepath):
-            import hashlib
-
-            with open(filepath, "rb") as f:
-                return hashlib.md5(f.read()).hexdigest()
-
         model_checkpoint = shared.opts.sd_model_checkpoint
         checkpoint_info = sd_models.checkpoints_list.get(model_checkpoint, None)
         if checkpoint_info is None:
@@ -122,30 +123,74 @@ class StableHorde:
                 continue
 
             if local_hash == remote_hash:
-                self.current_models = [model["name"]]
+                self.current_models = {model["name"]: checkpoint_info.name}
 
         if len(self.current_models) == 0:
             return f"Current model {model_checkpoint} not found on StableHorde"
 
+    def set_current_models(self, model_names: list):
+        """Set the current models in horde and config"""
+        remote_hashes = {}
+        self.current_models = {
+            k: v for k, v in self.current_models.items() if v in model_names
+        }
+        # get the md5sum of all supported models
+        for model in self.supported_models:
+            try:
+                remote_hashes[model["config"]["files"][0]["md5sum"]] = model["name"]
+            except KeyError:
+                continue
+
+        # get the md5sum of all local models and compare it to the remote hashes
+        # if the md5sum matches, add the model to the current models list
+        for checkpoint in sd_models.checkpoints_list.values():
+            checkpoint: sd_models.CheckpointInfo
+            if checkpoint.name in model_names:
+                # skip expensive md5sum calc if the model is
+                # already in the current models list
+                if checkpoint.name in self.config.current_models.values():
+                    continue
+                print(f"Calculating md5sum for {checkpoint.name}")
+                local_hash = get_md5sum(checkpoint.filename)
+                if local_hash in remote_hashes:
+                    self.current_models[remote_hashes[local_hash]] = checkpoint.name
+                    print(
+                        f"md5sum for {checkpoint.name} is {local_hash} \
+                            and it's supported by StableHorde"
+                    )
+                else:
+                    print(
+                        f"md5sum for {checkpoint.name} is {local_hash} \
+                            but it's not supported by StableHorde"
+                    )
+
+        self.config.current_models = self.current_models
+        self.config.save()
+        return self.current_models
+
     async def run(self):
         await self.get_supported_models()
+        self.current_models = self.config.current_models
 
         while True:
-            result = self.detect_current_model()
-            if result is not None:
-                self.state.status = result
-                # Wait 10 seconds before retrying to detect the current model
-                # if the current model is not listed in the Stable Horde supported
-                # models, we don't want to spam the server with requests
-                await asyncio.sleep(10)
-                continue
+            if len(self.current_models) == 0:
+                result = self.detect_current_model()
+                if result is not None:
+                    self.state.status = result
+                    # Wait 10 seconds before retrying to detect the current model
+                    # if the current model is not listed in the Stable Horde supported
+                    # models, we don't want to spam the server with requests
+                    await asyncio.sleep(10)
+                    continue
 
             await asyncio.sleep(self.config.interval)
 
             if self.config.enabled:
                 try:
                     req = await HordeJob.get(
-                        await self.get_session(), self.config, self.current_models
+                        await self.get_session(),
+                        self.config,
+                        list(self.current_models.keys()),
                     )
                     if req is None:
                         continue
@@ -228,7 +273,8 @@ class StableHorde:
     async def handle_request(self, job: HordeJob):
         self.patch_sampler_names()
 
-        self.state.status = f"Get popped generation request {job.id}"
+        self.state.status = f"Get popped generation request {job.id}, \
+            model {job.model}, sampler {job.sampler}"
         sampler_name = job.sampler
         if sampler_name == "k_dpm_adaptive":
             sampler_name = "k_dpm_ad"
@@ -238,6 +284,9 @@ class StableHorde:
         if job.karras:
             sampler_name += "_ka"
 
+        # Map model name to model
+        local_model = self.current_models.get(job.model, shared.sd_model)
+
         sampler = sd_samplers.samplers_map.get(sampler_name, None)
         if sampler is None:
             raise Exception(f"ERROR: Unknown sampler {sampler_name}")
@@ -245,7 +294,7 @@ class StableHorde:
         postprocessors = job.postprocessors
 
         params = {
-            "sd_model": shared.sd_model,
+            "sd_model": local_model,
             "prompt": job.prompt,
             "negative_prompt": job.negative_prompt,
             "sampler_name": sampler,
@@ -260,6 +309,9 @@ class StableHorde:
             "n_iter": job.n_iter,
             "do_not_save_samples": True,
             "do_not_save_grid": True,
+            "override_settings": {
+                "sd_model_checkpoint": local_model,
+            },
         }
 
         if job.source_image is not None:

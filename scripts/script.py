@@ -3,7 +3,7 @@ from typing import Optional
 from fastapi import FastAPI
 import gradio as gr
 
-from modules import scripts, script_callbacks
+from modules import scripts, script_callbacks, sd_models
 
 from stable_horde import StableHorde, StableHordeConfig
 
@@ -131,6 +131,47 @@ def on_ui_tabs():
                             config.save_images_folder,
                             label="Folder to Save Generation Images",
                             elem_id=tab_prefix + "save-images-folder",
+                        )
+
+                    with gr.Box(scale=2):
+
+                        def on_apply_selected_models(local_selected_models):
+                            status.update(
+                                f'Status: {"Running" if config.enabled else "Stopped"}, \
+                                    Updating selected models...'
+                            )
+                            selected_models = horde.set_current_models(
+                                local_selected_models
+                            )
+                            local_selected_models_dropdown.update(
+                                value=list(selected_models.values())
+                            )
+                            return f'Status:{"Running" if config.enabled else "Stopped"}, \
+                            Selected models {list(selected_models.values())} updated'
+
+                        local_selected_models_dropdown = gr.Dropdown(
+                            [
+                                model.name
+                                for model in sd_models.checkpoints_list.values()
+                            ],
+                            value=[
+                                model.name
+                                for model in sd_models.checkpoints_list.values()
+                                if model.name in list(config.current_models.values())
+                            ],
+                            label="Selected models for sharing",
+                            elem_id=tab_prefix + "local-selected-models",
+                            multiselect=True,
+                            interactive=True,
+                        )
+
+                        local_selected_models_dropdown.change(
+                            on_apply_selected_models,
+                            inputs=[local_selected_models_dropdown],
+                            outputs=[status],
+                        )
+                        gr.Markdown(
+                            "Once you select a model it will take some time to load."
                         )
 
                 with gr.Column():
