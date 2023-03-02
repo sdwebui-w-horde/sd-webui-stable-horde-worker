@@ -137,8 +137,9 @@ def on_ui_tabs():
 
                         def on_apply_selected_models(local_selected_models):
                             status.update(
-                                f'Status: {"Running" if config.enabled else "Stopped"}, \
-                                    Updating selected models...'
+                                f'Status: \
+                            {"Running" if config.enabled else "Stopped"}, \
+                            Updating selected models...'
                             )
                             selected_models = horde.set_current_models(
                                 local_selected_models
@@ -146,8 +147,10 @@ def on_ui_tabs():
                             local_selected_models_dropdown.update(
                                 value=list(selected_models.values())
                             )
-                            return f'Status:{"Running" if config.enabled else "Stopped"}, \
-                            Selected models {list(selected_models.values())} updated'
+                            return f'Status: \
+                            {"Running" if config.enabled else "Stopped"}, \
+                            Selected models \
+                            {list(selected_models.values())} updated'
 
                         local_selected_models_dropdown = gr.Dropdown(
                             [
