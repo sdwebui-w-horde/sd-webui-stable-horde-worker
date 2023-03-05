@@ -67,7 +67,7 @@ Here is the compatibilities with the [official bridge](https://github.com/db0/AI
 |Sample Karras Scheduler|⭕*|
 |R2 upload|✔️|
 |R2 source image|❌|
-|Multiple Models|❌|
+|Multiple Models|✔️|
 
 \* Karras scheduler is partially supported in SD-WebUI Bridge, see below.
 
