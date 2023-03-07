@@ -50,6 +50,7 @@ class HordeJob:
         source_processing: Optional[str] = "img2img",
         source_mask: Optional[Image.Image] = None,
         r2_upload: Optional[str] = None,
+        hires_fix: bool = False,
     ):
         self.status: JobStatus = JobStatus.PENDING
         self.session = session
@@ -77,6 +78,7 @@ class HordeJob:
         )
         self.source_mask = source_mask
         self.r2_upload = r2_upload
+        self.hires_fix = hires_fix
 
     async def submit(self, image: Image.Image):
         self.status = JobStatus.SUBMITTING
@@ -193,7 +195,8 @@ class HordeJob:
         # 1 - img2img, inpainting, karras, r2, CodeFormers
         # 2 - tiling
         # 3 - r2 source
-        version = 3
+        # 4 - hires_fix, clip_skip
+        version = 4
         name = "SD-WebUI Stable Horde Worker Bridge"
         repo = "https://github.com/sdwebui-w-horde/sd-webui-stable-horde-worker"
         # https://stablehorde.net/api/
@@ -203,9 +206,8 @@ class HordeJob:
             "nsfw": config.nsfw,
             "blacklist": [],
             "models": models,
-            # TODO: add support for bridge version 13 (clip_skip, hires_fix)
-            # and 14 (r2_source)
-            "bridge_version": 11,
+            # TODO: add support for bridge version 14 (r2_source)
+            "bridge_version": 13,
             "bridge_agent": f"{name}:{version}:{repo}",
             "threads": 1,
             "max_pixels": config.max_pixels,
@@ -274,4 +276,5 @@ class HordeJob:
             source_processing=req.get("source_processing"),
             source_mask=await to_image(req.get("source_mask")),
             r2_upload=req.get("r2_upload"),
+            hires_fix=payload.get("hires_fix", False),
         )

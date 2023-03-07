@@ -60,7 +60,7 @@ Here is the compatibilities with the [official bridge](https://github.com/db0/AI
 |Inpainting|✔️|
 |Interrogate|❌|
 |Tiling|✔️|
-|Hi-res Fix|❌|
+|Hi-res Fix|✔️|
 |Clip Skip|❌|
 |Face Restoration (GFPGAN)|✔️|
 |Upscale (ESRGAN)|✔️|
