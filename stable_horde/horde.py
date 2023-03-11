@@ -343,6 +343,7 @@ class StableHorde:
         has_nsfw = False
 
         with call_queue.queue_lock:
+            job.nsfw_censor = False
             if job.nsfw_censor:
                 x_image = np.array(processed.images[0])
                 image, has_nsfw = self.check_safety(x_image)
