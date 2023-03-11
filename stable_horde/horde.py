@@ -411,9 +411,14 @@ class StableHorde:
             if shared.opts.enable_pnginfo
             else None
         )
-        # workaround for model name and hash since webui uses shard.sd_model instead of local_model
-        infotext = sub('Model:(.*?),', 'Model: '+local_model.split(".")[0]+',', infotext)
-        infotext = sub('Model hash:(.*?),', 'Model hash: '+local_model_shorthash+',', infotext)
+        # workaround for model name and hash since webui
+        # uses shard.sd_model instead of local_model
+        infotext = sub(
+            "Model:(.*?),", "Model: " + local_model.split(".")[0] + ",", infotext
+        )
+        infotext = sub(
+            "Model hash:(.*?),", "Model hash: " + local_model_shorthash + ",", infotext
+        )
         if self.config.save_images:
             save_image(
                 image,
