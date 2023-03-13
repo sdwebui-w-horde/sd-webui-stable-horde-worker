@@ -19,7 +19,7 @@ class StableHordeConfig(object):
     save_images: bool = False
     save_images_folder: str = "horde"
     current_models: dict = {}
-    hires_firstphase_resolution: 512
+    hr_upscaler: str = "Latent"
 
     def __init__(self, basedir: str):
         self.basedir = basedir
@@ -57,7 +57,7 @@ class StableHordeConfig(object):
                 "interval": 10,
                 "max_pixels": 1048576,
                 "nsfw": False,
-                "hires_firstphase_resolution": 512,
+                "hr_upscaler": "Latent",
             }
             self.save()
 
