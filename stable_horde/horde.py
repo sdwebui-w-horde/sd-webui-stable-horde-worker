@@ -312,6 +312,7 @@ class StableHorde:
             "override_settings": {
                 "sd_model_checkpoint": local_model,
             },
+            "restore_settings": self.config.restore_settings,
         }
 
         if job.source_image is not None:
