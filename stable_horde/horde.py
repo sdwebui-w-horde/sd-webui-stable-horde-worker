@@ -316,6 +316,17 @@ class StableHorde:
             "hr_upscaler": self.config.hr_upscaler,
         }
 
+        if job.hires_fix:
+            ar = job.width / job.height
+            params["firstphase_width"] = min(
+                self.config.hires_firstphase_resolution,
+                int(self.config.hires_firstphase_resolution * ar),
+            )
+            params["firstphase_height"] = min(
+                self.config.hires_firstphase_resolution,
+                int(self.config.hires_firstphase_resolution / ar),
+            )
+
         if job.source_image is not None:
             p = img2img.StableDiffusionProcessingImg2Img(
                 init_images=[job.source_image],
