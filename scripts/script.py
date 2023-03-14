@@ -26,6 +26,7 @@ def apply_stable_horde_settings(
     allow_painting: bool,
     allow_unsafe_ipaddr: bool,
     allow_post_processing,
+    restore_settings: bool,
     nsfw: bool,
     interval: int,
     max_pixels: str,
@@ -39,6 +40,7 @@ def apply_stable_horde_settings(
     config.allow_painting = allow_painting
     config.allow_unsafe_ipaddr = allow_unsafe_ipaddr
     config.allow_post_processing = allow_post_processing
+    config.restore_settings = restore_settings
     config.interval = interval
     config.endpoint = endpoint
     config.apikey = apikey
@@ -108,6 +110,10 @@ def on_ui_tabs():
                         )
                         allow_post_processing = gr.Checkbox(
                             config.allow_post_processing, label="Allow Post Processing"
+                        )
+                        restore_settings = gr.Checkbox(
+                            config.restore_settings,
+                            label="Restore settings after rendering a job",
                         )
                         nsfw = gr.Checkbox(config.nsfw, label="Allow NSFW")
                         interval = gr.Slider(
@@ -245,6 +251,7 @@ def on_ui_tabs():
                 allow_painting,
                 allow_unsafe_ipaddr,
                 allow_post_processing,
+                restore_settings,
                 nsfw,
                 interval,
                 max_pixels,

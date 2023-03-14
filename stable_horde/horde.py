@@ -324,6 +324,7 @@ class StableHorde:
             },
             "enable_hr": job.hires_fix,
             "hr_upscaler": self.config.hr_upscaler,
+            "override_settings_restore_afterwards": self.config.restore_settings,
         }
 
         if job.hires_fix:
