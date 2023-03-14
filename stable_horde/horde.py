@@ -2,6 +2,7 @@ import asyncio
 import json
 from os import path
 from typing import Any, Dict, Optional
+from re import sub
 
 import aiohttp
 from .job import HordeJob
@@ -286,6 +287,15 @@ class StableHorde:
 
         # Map model name to model
         local_model = self.current_models.get(job.model, shared.sd_model)
+        # Short hash for info text
+        local_model_shorthash = None
+        for checkpoint in sd_models.checkpoints_list.values():
+            checkpoint: sd_models.CheckpointInfo
+            if checkpoint.name == local_model:
+                local_model_shorthash = checkpoint.shorthash
+                break
+        if local_model_shorthash is None:
+            raise Exception(f"ERROR: Unknown model {local_model}")
 
         sampler = sd_samplers.samplers_map.get(sampler_name, None)
         if sampler is None:
@@ -312,8 +322,21 @@ class StableHorde:
             "override_settings": {
                 "sd_model_checkpoint": local_model,
             },
-            "restore_settings": self.config.restore_settings,
+            "enable_hr": job.hires_fix,
+            "hr_upscaler": self.config.hr_upscaler,
+            "override_settings_restore_afterwards": self.config.restore_settings,
         }
+
+        if job.hires_fix:
+            ar = job.width / job.height
+            params["firstphase_width"] = min(
+                self.config.hires_firstphase_resolution,
+                int(self.config.hires_firstphase_resolution * ar),
+            )
+            params["firstphase_height"] = min(
+                self.config.hires_firstphase_resolution,
+                int(self.config.hires_firstphase_resolution / ar),
+            )
 
         if job.source_image is not None:
             p = img2img.StableDiffusionProcessingImg2Img(
@@ -401,6 +424,14 @@ class StableHorde:
             )
             if shared.opts.enable_pnginfo
             else None
+        )
+        # workaround for model name and hash since webui
+        # uses shard.sd_model instead of local_model
+        infotext = sub(
+            "Model:(.*?),", "Model: " + local_model.split(".")[0] + ",", infotext
+        )
+        infotext = sub(
+            "Model hash:(.*?),", "Model hash: " + local_model_shorthash + ",", infotext
         )
         if self.config.save_images:
             save_image(
