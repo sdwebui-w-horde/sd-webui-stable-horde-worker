@@ -292,6 +292,8 @@ class StableHorde:
         for checkpoint in sd_models.checkpoints_list.values():
             checkpoint: sd_models.CheckpointInfo
             if checkpoint.name == local_model:
+                if not checkpoint.shorthash:
+                    checkpoint.calculate_shorthash()
                 local_model_shorthash = checkpoint.shorthash
                 break
         if local_model_shorthash is None:
