@@ -11,6 +11,7 @@ class StableHordeConfig(object):
     interval: int = 10
     max_pixels: int = 1048576  # 1024x1024
     nsfw: bool = False
+    restore_settings: bool = True
     allow_img2img: bool = True
     allow_painting: bool = True
     allow_unsafe_ipaddr: bool = True
@@ -49,6 +50,7 @@ class StableHordeConfig(object):
                 "allow_painting": True,
                 "allow_unsafe_ipaddr": True,
                 "allow_post_processing": True,
+                "restore_settings": True,
                 "show_image_preview": False,
                 "save_images": False,
                 "save_images_folder": "horde",
