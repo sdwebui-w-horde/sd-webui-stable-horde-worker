@@ -187,20 +187,23 @@ class StableHorde:
             await asyncio.sleep(self.config.interval)
 
             if self.config.enabled:
-                try:
-                    req = await HordeJob.get(
-                        await self.get_session(),
-                        self.config,
-                        list(self.current_models.keys()),
-                    )
-                    if req is None:
-                        continue
+                # Require a queue lock to prevent getting jobs when
+                # there are generation jobs from webui.
+                with call_queue.queue_lock:
+                    try:
+                        req = await HordeJob.get(
+                            await self.get_session(),
+                            self.config,
+                            list(self.current_models.keys()),
+                        )
+                        if req is None:
+                            continue
 
-                    await self.handle_request(req)
-                except Exception:
-                    import traceback
+                        await self.handle_request(req)
+                    except Exception:
+                        import traceback
 
-                    traceback.print_exc()
+                        traceback.print_exc()
 
     def patch_sampler_names(self):
         """Add more samplers that the Stable Horde supports,
