@@ -188,11 +188,14 @@ class StableHorde:
 
             if self.config.enabled:
                 try:
-                    req = await HordeJob.get(
-                        await self.get_session(),
-                        self.config,
-                        list(self.current_models.keys()),
-                    )
+                    # Require a queue lock to prevent getting jobs when
+                    # there are generation jobs from webui.
+                    with call_queue.queue_lock:
+                        req = await HordeJob.get(
+                            await self.get_session(),
+                            self.config,
+                            list(self.current_models.keys()),
+                        )
                     if req is None:
                         continue
 
