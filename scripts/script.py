@@ -13,9 +13,10 @@ horde = StableHorde(basedir, config)
 
 
 def on_app_started(demo: Optional[gr.Blocks], app: FastAPI):
-    import gradio.utils
+    import asyncio
 
-    gradio.utils.synchronize_async(horde.run)
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(horde.run())
 
 
 def apply_stable_horde_settings(
