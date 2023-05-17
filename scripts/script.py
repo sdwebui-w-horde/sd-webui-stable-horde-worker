@@ -189,7 +189,7 @@ def on_ui_tabs():
                         config.show_image_preview, label="Show Images"
                     )
                     save_images = gr.Checkbox(
-                        config.show_image_preview, label="Save Images"
+                        config.save_images, label="Save Images"
                     )
 
                     refresh = gr.Button(
