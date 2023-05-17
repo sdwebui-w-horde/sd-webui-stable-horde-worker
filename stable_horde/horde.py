@@ -7,6 +7,7 @@ from re import sub
 import aiohttp
 from .job import HordeJob
 from .config import StableHordeConfig
+from .user import HordeUser
 import numpy as np
 from diffusers.pipelines.stable_diffusion.safety_checker import (
     StableDiffusionSafetyChecker,
@@ -51,6 +52,7 @@ class State:
         self.steps: Optional[int] = None
         self.sampler: Optional[str] = None
         self.image: Optional[Image.Image] = None
+        self.user: Optional[HordeUser] = None
 
     @property
     def status(self):

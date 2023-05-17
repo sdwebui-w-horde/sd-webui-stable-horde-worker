@@ -58,10 +58,10 @@ def apply_stable_horde_settings(
         "Running Type: Image Generation",
     )
 
+tab_prefix = "stable-horde-"
 
-def on_ui_tabs():
-    tab_prefix = "stable-horde-"
-    with gr.Blocks() as demo:
+def get_worker_ui():
+    with gr.Blocks() as worker_ui:
         with gr.Column(elem_id="stable-horde"):
             with gr.Row():
                 status = gr.Textbox(
@@ -94,11 +94,6 @@ def on_ui_tabs():
                             config.name,
                             label="Worker Name",
                             elem_id=tab_prefix + "name",
-                        )
-                        apikey = gr.Textbox(
-                            config.apikey,
-                            label="Stable Horde API Key",
-                            elem_id=tab_prefix + "apikey",
                         )
                         allow_img2img = gr.Checkbox(
                             config.allow_img2img, label="Allow img2img"
@@ -262,8 +257,32 @@ def on_ui_tabs():
             outputs=[status, running_type],
         )
 
-    return ((demo, "Stable Horde Worker", "stable-horde"),)
+    return worker_ui
 
+def get_user_ui():
+    with gr.Blocks() as user_ui:
+        gr.HTML(elem_id=f"{tab_prefix}user-html")
+    return user_ui
+
+def on_ui_tabs():
+    with gr.Blocks() as demo:
+        with gr.Row() as row:
+            apikey = gr.Textbox(
+                config.apikey,
+                label="Stable Horde API Key",
+                elem_id=tab_prefix + "apikey",
+            )
+            save_apikey = gr.Button("Apply Settings", elem_id=tab_prefix + "apikey-save")
+
+            def save_apikey_fn(apikey: str):
+                config.apikey = apikey
+                config.save()
+
+            save_apikey.click(fn=save_apikey_fn, inputs=[apikey])
+
+        gr.TabbedInterface([get_worker_ui(), get_user_ui()], ["Worker", "User"])
+
+    return ((demo, "Stable Horde Worker", "stable-horde"),)
 
 script_callbacks.on_app_started(on_app_started)
 script_callbacks.on_ui_tabs(on_ui_tabs)
