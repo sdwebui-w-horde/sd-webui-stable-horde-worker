@@ -188,9 +188,7 @@ def on_ui_tabs():
                     show_images = gr.Checkbox(
                         config.show_image_preview, label="Show Images"
                     )
-                    save_images = gr.Checkbox(
-                        config.show_image_preview, label="Save Images"
-                    )
+                    save_images = gr.Checkbox(config.save_images, label="Save Images")
 
                     refresh = gr.Button(
                         "Refresh", visible=False, elem_id=tab_prefix + "refresh"
