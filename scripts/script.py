@@ -22,7 +22,6 @@ def on_app_started(demo: Optional[gr.Blocks], app: FastAPI):
 def apply_stable_horde_settings(
     enable: bool,
     name: str,
-    apikey: str,
     allow_img2img: bool,
     allow_painting: bool,
     allow_unsafe_ipaddr: bool,
@@ -44,7 +43,6 @@ def apply_stable_horde_settings(
     config.restore_settings = restore_settings
     config.interval = interval
     config.endpoint = endpoint
-    config.apikey = apikey
     config.name = name
     config.max_pixels = int(max_pixels)
     config.nsfw = nsfw
@@ -58,7 +56,9 @@ def apply_stable_horde_settings(
         "Running Type: Image Generation",
     )
 
+
 tab_prefix = "stable-horde-"
+
 
 def get_worker_ui():
     with gr.Blocks() as worker_ui:
@@ -240,7 +240,6 @@ def get_worker_ui():
             inputs=[
                 enable,
                 name,
-                apikey,
                 allow_img2img,
                 allow_painting,
                 allow_unsafe_ipaddr,
@@ -257,12 +256,14 @@ def get_worker_ui():
             outputs=[status, running_type],
         )
 
-    return worker_ui
+        return worker_ui
+
 
 def get_user_ui():
     with gr.Blocks() as user_ui:
         gr.HTML(elem_id=f"{tab_prefix}user-html")
-    return user_ui
+        return user_ui
+
 
 def on_ui_tabs():
     with gr.Blocks() as demo:
@@ -280,9 +281,14 @@ def on_ui_tabs():
 
             save_apikey.click(fn=save_apikey_fn, inputs=[apikey])
 
-        gr.TabbedInterface([get_worker_ui(), get_user_ui()], ["Worker", "User"])
+        with gr.Tab("Worker"):
+            worker_ui = get_worker_ui()
+
+        with gr.Tab("User"):
+            user_ui = get_user_ui()
 
     return ((demo, "Stable Horde Worker", "stable-horde"),)
+
 
 script_callbacks.on_app_started(on_app_started)
 script_callbacks.on_ui_tabs(on_ui_tabs)
