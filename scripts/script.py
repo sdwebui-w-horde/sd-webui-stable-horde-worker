@@ -267,13 +267,13 @@ def get_user_ui():
 
 def on_ui_tabs():
     with gr.Blocks() as demo:
-        with gr.Row() as row:
+        with gr.Row():
             apikey = gr.Textbox(
                 config.apikey,
                 label="Stable Horde API Key",
                 elem_id=tab_prefix + "apikey",
             )
-            save_apikey = gr.Button("Apply Settings", elem_id=tab_prefix + "apikey-save")
+            save_apikey = gr.Button("Save", elem_id=f"{tab_prefix}apikey-save")
 
             def save_apikey_fn(apikey: str):
                 config.apikey = apikey
@@ -282,10 +282,10 @@ def on_ui_tabs():
             save_apikey.click(fn=save_apikey_fn, inputs=[apikey])
 
         with gr.Tab("Worker"):
-            worker_ui = get_worker_ui()
+            get_worker_ui()
 
         with gr.Tab("User"):
-            user_ui = get_user_ui()
+            get_user_ui()
 
     return ((demo, "Stable Horde Worker", "stable-horde"),)
 
