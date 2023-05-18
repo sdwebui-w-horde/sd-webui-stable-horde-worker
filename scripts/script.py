@@ -1,4 +1,5 @@
 from typing import Optional
+import time
 
 from fastapi import FastAPI
 import gradio as gr
@@ -80,8 +81,6 @@ def get_worker_ui():
                 apply_settings = gr.Button(
                     "Apply Settings", elem_id=tab_prefix + "apply-settings"
                 )
-            with gr.Row():
-                state = gr.Textbox("", label="", readonly=True)
             with gr.Row().style(equal_height=False):
                 with gr.Column():
                     with gr.Box(scale=2):
@@ -194,6 +193,8 @@ def get_worker_ui():
                         elem_id=tab_prefix + "refresh-image",
                     )
 
+                    state = gr.Textbox("", label="", readonly=True)
+
                     current_id = gr.Textbox(
                         "Current ID: ",
                         label="",
@@ -207,31 +208,36 @@ def get_worker_ui():
                         readonly=True,
                     ).style(grid=4)
 
-                    def on_refresh(image=False, show_images=config.show_image_preview):
-                        cid = f"Current ID: {horde.state.id}"
-                        html = "".join(
-                            map(
-                                lambda x: f"<p>{x[0]}: {x[1]}</p>",
-                                horde.state.to_dict().items(),
+                    def on_refresh(image=True, show_images=config.show_image_preview):
+                        cid = horde.state.id
+                        images = []
+
+                        while True:
+                            time.sleep(1.5)
+
+                            if not config.enabled:
+                                yield "Current ID: null", "", "Stopped", []
+
+                            cid = horde.state.id
+                            html = "".join(
+                                map(
+                                    lambda x: f"<p>{x[0]}: {x[1]}</p>",
+                                    horde.state.to_dict().items(),
+                                )
                             )
-                        )
-                        images = (
-                            [horde.state.image] if horde.state.image is not None else []
-                        )
-                        if image and show_images:
-                            return cid, html, horde.state.status, images
-                        return cid, html, horde.state.status
+                            if image and show_images:
+                                images = (
+                                    [horde.state.image]
+                                    if horde.state.image is not None
+                                    else []
+                                )
+                            yield f"Current ID: {cid}", html, horde.state.status, images
 
                     with gr.Row():
                         log = gr.HTML(elem_id=tab_prefix + "log")
 
-                    refresh.click(
-                        fn=lambda: on_refresh(),
-                        outputs=[current_id, log, state],
-                        show_progress=False,
-                    )
                     refresh_image.click(
-                        fn=lambda: on_refresh(True),
+                        fn=on_refresh,
                         outputs=[current_id, log, state, preview],
                         show_progress=False,
                     )

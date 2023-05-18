@@ -24,4 +24,14 @@ function stableHordeStopTimer() {
   }
 }
 
-stableHordeStartTimer()
+// stableHordeStartTimer()
+
+;(() => {
+  const timer = setInterval(() => {
+    const refresh = gradioApp().querySelector('#stable-horde #stable-horde-refresh-image')
+    if (refresh) {
+      clearInterval(timer)
+      refresh.click()
+    }
+  }, 1000)
+})()
