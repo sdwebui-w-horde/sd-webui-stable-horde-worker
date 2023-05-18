@@ -286,7 +286,7 @@ def get_user_ui():
                     [worker.id, worker.name, worker.maintenance_mode,
                      "<button " +
                      f"data-api=\"{config.endpoint}/api/v2/worker/{worker.id}\"" +
-                     " onclick=\"stableHordeSwitchMaintenance\">" +
+                     " onclick=\"stableHordeSwitchMaintenance()\">" +
                      "Switch Maintenance</button>"],
                 ))
 
