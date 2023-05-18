@@ -7,6 +7,7 @@ import gradio as gr
 from modules import scripts, script_callbacks, sd_models
 
 from stable_horde import StableHorde, StableHordeConfig
+from stable_horde.user import HordeWorker
 
 basedir = scripts.basedir()
 config = StableHordeConfig(basedir)
@@ -264,17 +265,48 @@ def get_worker_ui():
 
 def get_user_ui():
     with gr.Blocks() as user_ui:
-        user_welcome = gr.Markdown(
-            "**Try click update button to fetch the user info**",
-            elem_id=f"{tab_prefix}user-webcome",
-        )
-        user_update = gr.Button("Update", elem_id=f"{tab_prefix}user-update")
+        with gr.Row():
+            with gr.Column(scale=1):
+                user_update = gr.Button("Update", elem_id=f"{tab_prefix}user-update")
+            with gr.Column(scale=4):
+                user_welcome = gr.Markdown(
+                    "**Try click update button to fetch the user info**",
+                    elem_id=f"{tab_prefix}user-webcome",
+                )
+        with gr.Column():
+            workers = gr.HTML("No Worker")
 
         def update_user_info():
             if horde.state.user is not None:
-                return f"Welcome Back, **{horde.state.user.username}**!"
+                user_welcome.update(f"Welcome Back, **{horde.state.user.username}**!")
 
-        user_update.click(fn=update_user_info, outputs=[user_welcome])
+                def map_worker_detail(worker: HordeWorker):
+                    return "\n".join(map(
+                        lambda x: f"<td>{x}</td>",
+                        [worker.id, worker.name, worker.maintenance_mode],
+                    ))
+
+                workers_html = map(
+                    lambda x: f"<tr>{map_worker_detail(x)}</tr>",
+                    horde.state.user.workers,
+                )
+
+                workers.update("""
+                    <table>
+                    <thead>
+                    <tr>
+                    <th>Worker ID</th>
+                    <th>Worker Name</th>
+                    <th>Worker Status</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    """ + "".join(workers_html) + """
+                    </tbody>
+                    </table>
+                    """)
+
+        user_update.click(fn=update_user_info)
 
         return user_ui
 
