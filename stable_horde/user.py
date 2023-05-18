@@ -10,7 +10,7 @@ class HordeWorker:
     @classmethod
     async def get(cls, session: aiohttp.ClientSession, worker_id: str):
         # https://stablehorde.net/api/#operations-v2-get_worker_single
-        r = await session.get(f"/v2/workers/{worker_id}")
+        r = await session.get(f"/api/v2/workers/{worker_id}")
         json = await r.json()
         return HordeWorker(worker_id, json["name"], json["maintenance_mode"])
 
@@ -34,7 +34,7 @@ class HordeUser:
         workers = []
 
         for worker in json["worker_ids"]:
-            workers.append(await HordeWorker.get(session, worker["id"]))
+            workers.append(await HordeWorker.get(session, worker))
 
         return HordeUser(
             json["id"], json["username"], json["kudos"], workers

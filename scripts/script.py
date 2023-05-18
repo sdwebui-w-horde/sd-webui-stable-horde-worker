@@ -277,36 +277,74 @@ def get_user_ui():
             workers = gr.HTML("No Worker")
 
         def update_user_info():
-            if horde.state.user is not None:
-                user_welcome.update(f"Welcome Back, **{horde.state.user.username}**!")
+            if horde.state.user is None:
+                return "**Try click update button to fetch the user info**", "No Worker"
 
-                def map_worker_detail(worker: HordeWorker):
-                    return "\n".join(map(
-                        lambda x: f"<td>{x}</td>",
-                        [worker.id, worker.name, worker.maintenance_mode],
-                    ))
+            def map_worker_detail(worker: HordeWorker):
+                return "\n".join(map(
+                    lambda x: f"<td>{x}</td>",
+                    [worker.id, worker.name, worker.maintenance_mode,
+                     f"<button data-worker-id=\"{worker.id}\" " +
+                        "onclick=\"stableHordeSwitchMaintenance\">"],
+                ))
 
-                workers_html = map(
-                    lambda x: f"<tr>{map_worker_detail(x)}</tr>",
-                    horde.state.user.workers,
-                )
+            workers_table_cells = map(
+                lambda x: f"<tr>{map_worker_detail(x)}</tr>",
+                horde.state.user.workers,
+            )
 
-                workers.update("""
-                    <table>
-                    <thead>
-                    <tr>
-                    <th>Worker ID</th>
-                    <th>Worker Name</th>
-                    <th>Worker Status</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    """ + "".join(workers_html) + """
-                    </tbody>
-                    </table>
-                    """)
+            workers_html = """
+                <table>
+                <thead>
+                <tr>
+                <th>Worker ID</th>
+                <th>Worker Name</th>
+                <th>Maintenance Mode ?</th>
+                <th>Actions</th>
+                </tr>
+                </thead>
+                <tbody>
+                """ + "".join(workers_table_cells) + """
+                </tbody>
+                </table>
+                <script>
+                async function stableHordeSwitchMaintenance(e) {{
+                    const workerId = e.target.dataset.workerId;
+                    const url = "{endpoint}/api/v2/worker/" + workerId;
+                    e.target.disabled = true;
+                    e.target.innerText = "Switching...";
 
-        user_update.click(fn=update_user_info)
+                    const response = await fetch(url, {{
+                        method: "PUT",
+                        headers: {{
+                            "apikey": "{apikey}",
+                            "Content-Type": "application/json"
+                        }},
+                        body: JSON.stringify({{
+                            "maintenance_mode": true
+                        }})
+                    }});
+
+                    if (response.ok) {{
+                        e.target.innerText = "Switched";
+                        setTimeout(() => {{
+                            e.target.disabled = false;
+                            e.target.innerText = "Switch Maintenance";
+                        }}, 1000);
+                    }} else {{
+                        e.target.innerText = "Failed";
+                        setTimeout(() => {{
+                            e.target.disabled = false;
+                            e.target.innerText = "Switch Maintenance";
+                        }}, 1000);
+                    }}
+                }}
+                </script>
+                """.format(endpoint=config.endpoint, apikey=config.apikey)
+
+            return f"Welcome Back, **{horde.state.user.username}**!", workers_html
+
+        user_update.click(fn=update_user_info, outputs=[user_welcome, workers])
 
         return user_ui
 
