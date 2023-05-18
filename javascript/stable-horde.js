@@ -26,6 +26,37 @@ function stableHordeStopTimer() {
 
 // stableHordeStartTimer()
 
+async function stableHordeSwitchMaintenance(e) {
+  const url = e.target.dataset.api;
+  e.target.disabled = true;
+  e.target.innerText = "Switching...";
+
+  const response = await fetch(url, {
+      method: "PUT",
+      headers: {
+          "apikey": "{apikey}",
+          "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+          "maintenance_mode": true
+      })
+  });
+
+  if (response.ok) {
+      e.target.innerText = "Switched";
+      setTimeout(() => {
+          e.target.disabled = false;
+          e.target.innerText = "Switch Maintenance";
+      }, 1000);
+  } else {
+      e.target.innerText = "Failed";
+      setTimeout(() => {
+          e.target.disabled = false;
+          e.target.innerText = "Switch Maintenance";
+      }, 1000);
+  }
+}
+
 ;(() => {
   const timer = setInterval(() => {
     const refresh = gradioApp().querySelector('#stable-horde #stable-horde-refresh-image')

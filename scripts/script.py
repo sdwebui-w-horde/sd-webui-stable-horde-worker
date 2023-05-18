@@ -284,8 +284,10 @@ def get_user_ui():
                 return "\n".join(map(
                     lambda x: f"<td>{x}</td>",
                     [worker.id, worker.name, worker.maintenance_mode,
-                     f"<button data-worker-id=\"{worker.id}\" " +
-                        "onclick=\"stableHordeSwitchMaintenance\">"],
+                     "<button " +
+                     f"data-api=\"{config.endpoint}/api/v2/worker/{worker.id}\"" +
+                     " onclick=\"stableHordeSwitchMaintenance\">" +
+                     "Switch Maintenance</button>"],
                 ))
 
             workers_table_cells = map(
@@ -307,40 +309,7 @@ def get_user_ui():
                 """ + "".join(workers_table_cells) + """
                 </tbody>
                 </table>
-                <script>
-                async function stableHordeSwitchMaintenance(e) {{
-                    const workerId = e.target.dataset.workerId;
-                    const url = "{endpoint}/api/v2/worker/" + workerId;
-                    e.target.disabled = true;
-                    e.target.innerText = "Switching...";
-
-                    const response = await fetch(url, {{
-                        method: "PUT",
-                        headers: {{
-                            "apikey": "{apikey}",
-                            "Content-Type": "application/json"
-                        }},
-                        body: JSON.stringify({{
-                            "maintenance_mode": true
-                        }})
-                    }});
-
-                    if (response.ok) {{
-                        e.target.innerText = "Switched";
-                        setTimeout(() => {{
-                            e.target.disabled = false;
-                            e.target.innerText = "Switch Maintenance";
-                        }}, 1000);
-                    }} else {{
-                        e.target.innerText = "Failed";
-                        setTimeout(() => {{
-                            e.target.disabled = false;
-                            e.target.innerText = "Switch Maintenance";
-                        }}, 1000);
-                    }}
-                }}
-                </script>
-                """.format(endpoint=config.endpoint, apikey=config.apikey)
+                """
 
             return f"Welcome Back, **{horde.state.user.username}**!", workers_html
 
