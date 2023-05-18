@@ -89,6 +89,16 @@ class StableHorde:
         self.current_models = {}
 
         self.state = State()
+        self.inited = False
+
+    async def init(self):
+        if self.config.apikey:
+            self.state.user = await HordeUser.get(await self.get_session())
+
+        await self.get_supported_models()
+        self.current_models = self.config.current_models
+
+        self.inited = True
 
     async def get_supported_models(self):
         attempts = 10
@@ -172,8 +182,8 @@ class StableHorde:
         return self.current_models
 
     async def run(self):
-        await self.get_supported_models()
-        self.current_models = self.config.current_models
+        if not self.inited:
+            await self.init()
 
         while True:
             if len(self.current_models) == 0:

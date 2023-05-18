@@ -8,9 +8,9 @@ class HordeUser:
     workers: List[str]
 
     @classmethod
-    async def get(session: aiohttp.ClientSession):
+    async def get(cls, session: aiohttp.ClientSession):
         # https://stablehorde.net/api/#operations-v2-get_find_user
-        r = await session.get('/v2/find_user')
+        r = await session.get('/api/v2/find_user')
         json = await r.json()
         return HordeUser(json["id"], json["username"], json["kudos"], json["worker_ids"])
 

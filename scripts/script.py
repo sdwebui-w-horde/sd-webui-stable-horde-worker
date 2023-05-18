@@ -184,9 +184,6 @@ def get_worker_ui():
                     )
                     save_images = gr.Checkbox(config.save_images, label="Save Images")
 
-                    refresh = gr.Button(
-                        "Refresh", visible=False, elem_id=tab_prefix + "refresh"
-                    )
                     refresh_image = gr.Button(
                         "Refresh Image",
                         visible=False,
@@ -267,7 +264,18 @@ def get_worker_ui():
 
 def get_user_ui():
     with gr.Blocks() as user_ui:
-        gr.HTML(elem_id=f"{tab_prefix}user-html")
+        user_welcome = gr.Markdown(
+            "**Try click update button to fetch the user info**",
+            elem_id=f"{tab_prefix}user-webcome",
+        )
+        user_update = gr.Button("Update", elem_id=f"{tab_prefix}user-update")
+
+        def update_user_info():
+            if horde.state.user is not None:
+                return f"Welcome Back, **{horde.state.user.username}**!"
+
+        user_update.click(fn=update_user_info, outputs=[user_welcome])
+
         return user_ui
 
 
