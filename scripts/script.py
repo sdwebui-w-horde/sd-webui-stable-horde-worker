@@ -26,14 +26,21 @@ def on_app_started(demo: Optional[gr.Blocks], app: FastAPI):
 
     @app.put("/stable-horde/workers/{worker_id}")
     def put_workers(worker_id: str, post_data: PostData):
-        return horde.get_session().put('/api/v2/workers/' + worker_id, json={
-            "maintenance": post_data.maintenance,
-            "maintenance_msg": post_data.maintenance_msg,
-            "paused": post_data.paused,
-            "info": post_data.info,
-            "name": post_data.name,
-            "team": post_data.team,
-        }).json()
+        return (
+            horde.get_session()
+            .put(
+                "/api/v2/workers/" + worker_id,
+                json={
+                    "maintenance": post_data.maintenance,
+                    "maintenance_msg": post_data.maintenance_msg,
+                    "paused": post_data.paused,
+                    "info": post_data.info,
+                    "name": post_data.name,
+                    "team": post_data.team,
+                },
+            )
+            .json()
+        )
 
     horde.run()
 
@@ -298,20 +305,27 @@ def get_user_ui():
                 return "**Try click update button to fetch the user info**", "No Worker"
 
             def map_worker_detail(worker: HordeWorker):
-                return "\n".join(map(
-                    lambda x: f"<td>{x}</td>",
-                    [worker.id, worker.name, worker.maintenance_mode,
-                     "<button " +
-                     f" onclick=\"stableHordeSwitchMaintenance('{worker.id}')\">" +
-                     "Switch Maintenance</button>"],
-                ))
+                return "\n".join(
+                    map(
+                        lambda x: f"<td>{x}</td>",
+                        [
+                            worker.id,
+                            worker.name,
+                            worker.maintenance_mode,
+                            "<button onclick=\""
+                            + f"stableHordeSwitchMaintenance('{worker.id}')\">"
+                            + "Switch Maintenance</button>",
+                        ],
+                    )
+                )
 
             workers_table_cells = map(
                 lambda x: f"<tr>{map_worker_detail(x)}</tr>",
                 horde.state.user.workers,
             )
 
-            workers_html = """
+            workers_html = (
+                """
                 <table>
                 <thead>
                 <tr>
@@ -322,10 +336,13 @@ def get_user_ui():
                 </tr>
                 </thead>
                 <tbody>
-                """ + "".join(workers_table_cells) + """
+                """
+                + "".join(workers_table_cells)
+                + """
                 </tbody>
                 </table>
                 """
+            )
 
             return f"Welcome Back, **{horde.state.user.username}** !", workers_html
 

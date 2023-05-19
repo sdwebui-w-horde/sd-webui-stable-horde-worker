@@ -124,7 +124,8 @@ class HordeJob:
 
                     if r.status_code == 500:
                         print(
-                            f"Failed to submit job with status code {r.status_code}, retry!"
+                            f"Failed to submit job with status code {r.status_code},"
+                            + " retry!"
                         )
                         attempts -= 1
                         time.sleep(self.retry_interval)
