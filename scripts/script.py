@@ -312,7 +312,7 @@ def get_user_ui():
                             worker.id,
                             worker.name,
                             worker.maintenance_mode,
-                            "<button onclick=\""
+                            '<button onclick="'
                             + f"stableHordeSwitchMaintenance('{worker.id}')\">"
                             + "Switch Maintenance</button>",
                         ],
