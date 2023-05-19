@@ -1,5 +1,5 @@
-from typing import List
-import aiohttp
+from typing import List, Optional
+import requests
 
 
 class HordeWorker:
@@ -7,17 +7,13 @@ class HordeWorker:
     name: str
     maintenance_mode: bool
 
-    @classmethod
-    async def get(cls, session: aiohttp.ClientSession, worker_id: str):
+    def __init__(self, session: requests.Session, worker_id: str):
         # https://stablehorde.net/api/#operations-v2-get_worker_single
-        r = await session.get(f"/api/v2/workers/{worker_id}")
-        json = await r.json()
-        return HordeWorker(worker_id, json["name"], json["maintenance_mode"])
-
-    def __init__(self, id: str, name: str, maintenance_mode: bool):
-        self.id = id
-        self.name = name
-        self.maintenance_mode = maintenance_mode
+        r = session.get(f"/api/v2/workers/{worker_id}")
+        json = r.json()
+        self.id = worker_id
+        self.name = json["name"]
+        self.maintenance_mode = json["maintenance_mode"]
 
 
 class HordeUser:
@@ -26,22 +22,21 @@ class HordeUser:
     kudos: int
     workers: List[HordeWorker]
 
-    @classmethod
-    async def get(cls, session: aiohttp.ClientSession):
+    def __init__(self, session: requests.Session):
         # https://stablehorde.net/api/#operations-v2-get_find_user
-        r = await session.get("/api/v2/find_user")
-        json = await r.json()
+        r = session.get("/api/v2/find_user")
+        json = r.json()
         workers = []
 
         for worker in json["worker_ids"]:
-            workers.append(await HordeWorker.get(session, worker))
+            workers.append(HordeWorker(session, worker))
 
-        return HordeUser(
-            json["id"], json["username"], json["kudos"], workers
-        )
+            self.id = json["id"]
+            self.username = json["username"]
+            self.kudos = json["kudos"]
+            self.workers = workers
 
-    def __init__(self, id: str, username: str, kudos: int, workers: List[HordeWorker]):
-        self.id = id
-        self.username = username
-        self.kudos = kudos
-        self.workers = workers
+    def get_worker(self, worker_id: str) -> Optional[HordeWorker]:
+        for worker in self.workers:
+            if worker.id == worker_id:
+                return worker

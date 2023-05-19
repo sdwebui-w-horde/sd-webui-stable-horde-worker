@@ -2,6 +2,7 @@ from typing import Optional
 import time
 
 from fastapi import FastAPI
+from pydantic import BaseModel
 import gradio as gr
 
 from modules import scripts, script_callbacks, sd_models
@@ -15,10 +16,26 @@ horde = StableHorde(basedir, config)
 
 
 def on_app_started(demo: Optional[gr.Blocks], app: FastAPI):
-    import asyncio
+    class PostData(BaseModel):
+        maintenance: Optional[bool] = None
+        maintenance_msg: Optional[str] = None
+        paused: Optional[bool] = None
+        info: Optional[str] = None
+        name: Optional[str] = None
+        team: Optional[str] = None
 
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(horde.run())
+    @app.put("/stable-horde/workers/{worker_id}")
+    def put_workers(worker_id: str, post_data: PostData):
+        return horde.get_session().put('/api/v2/workers/' + worker_id, json={
+            "maintenance": post_data.maintenance,
+            "maintenance_msg": post_data.maintenance_msg,
+            "paused": post_data.paused,
+            "info": post_data.info,
+            "name": post_data.name,
+            "team": post_data.team,
+        }).json()
+
+    horde.run()
 
 
 def apply_stable_horde_settings(
@@ -64,7 +81,7 @@ tab_prefix = "stable-horde-"
 
 def get_worker_ui():
     with gr.Blocks() as worker_ui:
-        with gr.Column(elem_id="stable-horde"):
+        with gr.Column():
             with gr.Row():
                 status = gr.Textbox(
                     f'Status: {"Running" if config.enabled else "Stopped"}',
@@ -285,8 +302,7 @@ def get_user_ui():
                     lambda x: f"<td>{x}</td>",
                     [worker.id, worker.name, worker.maintenance_mode,
                      "<button " +
-                     f"data-api=\"{config.endpoint}/api/v2/worker/{worker.id}\"" +
-                     " onclick=\"stableHordeSwitchMaintenance()\">" +
+                     f" onclick=\"stableHordeSwitchMaintenance('{worker.id}')\">" +
                      "Switch Maintenance</button>"],
                 ))
 
@@ -311,7 +327,7 @@ def get_user_ui():
                 </table>
                 """
 
-            return f"Welcome Back, **{horde.state.user.username}**!", workers_html
+            return f"Welcome Back, **{horde.state.user.username}** !", workers_html
 
         user_update.click(fn=update_user_info, outputs=[user_welcome, workers])
 

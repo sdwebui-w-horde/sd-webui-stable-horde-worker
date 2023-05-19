@@ -1,12 +1,12 @@
-import asyncio
 import base64
 from enum import Enum
 import io
 from random import randint
+import time
 from typing import List, Optional
 from PIL import Image
 
-import aiohttp
+import requests
 from .config import StableHordeConfig
 
 
@@ -27,7 +27,7 @@ class HordeJob:
 
     def __init__(
         self,
-        session: aiohttp.ClientSession,
+        session: requests.Session,
         id: str,
         model: str,
         prompt: str,
@@ -80,23 +80,22 @@ class HordeJob:
         self.r2_upload = r2_upload
         self.hires_fix = hires_fix
 
-    async def submit(self, image: Image.Image):
+    def submit(self, image: Image.Image):
         self.status = JobStatus.SUBMITTING
 
         bytesio = io.BytesIO()
         image.save(bytesio, format="WebP", quality=95)
 
         if self.r2_upload:
-            async with aiohttp.ClientSession() as session:
-                attempts = 10
-                while attempts > 0:
-                    try:
-                        r = await session.put(self.r2_upload, data=bytesio.getvalue())
-                        break
-                    except aiohttp.ClientConnectorError:
-                        attempts -= 1
-                        await asyncio.sleep(self.retry_interval)
-                        continue
+            attempts = 10
+            while attempts > 0:
+                try:
+                    r = requests.put(self.r2_upload, data=bytesio.getvalue())
+                    break
+                except requests.exceptions.ConnectionError:
+                    attempts -= 1
+                    time.sleep(self.retry_interval)
+                    continue
             generation = "R2"
 
             self.status = JobStatus.UPLOADED
@@ -114,21 +113,21 @@ class HordeJob:
         attempts = 10
         while attempts > 0:
             try:
-                r = await self.session.post("/api/v2/generate/submit", json=post_data)
+                r = self.session.post("/api/v2/generate/submit", json=post_data)
 
                 try:
-                    res = await r.json()
+                    res = r.json()
 
-                    if r.status == 404:
+                    if r.status_code == 404:
                         print(f"job {self.id} has been submitted already")
                         return
 
-                    if r.status == 500:
+                    if r.status_code == 500:
                         print(
-                            f"Failed to submit job with status code {r.status}, retry!"
+                            f"Failed to submit job with status code {r.status_code}, retry!"
                         )
                         attempts -= 1
-                        await asyncio.sleep(self.retry_interval)
+                        time.sleep(self.retry_interval)
                         continue
 
                     if r.ok:
@@ -140,47 +139,47 @@ class HordeJob:
                     else:
                         print(
                             "Failed to submit job with status code"
-                            + f"{r.status}: {res.get('message')}"
+                            + f"{r.status_code}: {res.get('message')}"
                         )
                         return None
                 except Exception:
                     print("Error when decoding response, the server might be down.")
                     return None
 
-            except aiohttp.ClientConnectorError:
+            except requests.exceptions.ConnectionError:
                 attempts -= 1
-                await asyncio.sleep(self.retry_interval)
+                time.sleep(self.retry_interval)
                 continue
 
         self.status = JobStatus.ERROR
 
-    async def error(self):
+    def error(self):
         self.status = JobStatus.ERROR
 
         post_data = {"id": self.id, "state": "faulted"}
         attempts = 10
         while attempts > 0:
             try:
-                r = await self.session.post("/api/v2/generate/submit", json=post_data)
+                r = self.session.post("/api/v2/generate/submit", json=post_data)
                 if r.ok:
                     print("Successfully reported error to Stable Horde")
                     return
                 else:
-                    res = await r.json()
+                    res = r.json()
                     print(
                         "Failed to report error with status code"
-                        + f"{r.status}: {res.get('message')}"
+                        + f"{r.status_code}: {res.get('message')}"
                     )
                     return
-            except aiohttp.ClientConnectorError:
+            except requests.exceptions.ConnectionError:
                 attempts -= 1
-                await asyncio.sleep(self.retry_interval)
+                time.sleep(self.retry_interval)
                 continue
 
     @classmethod
-    async def get(
+    def get(
         cls,
-        session: aiohttp.ClientSession,
+        session: requests.Session,
         config: StableHordeConfig,
         models: List[str],
     ):
@@ -216,11 +215,11 @@ class HordeJob:
             "allow_unsafe_ipaddr": config.allow_unsafe_ipaddr,
         }
 
-        r = await session.post("/api/v2/generate/pop", json=post_data)
+        r = session.post("/api/v2/generate/pop", json=post_data)
 
-        req = await r.json()
+        req = r.json()
 
-        if r.status != 200:
+        if r.status_code != 200:
             raise Exception(f"Failed to get job: {req.get('message')}")
 
         if not req.get("id"):
@@ -233,22 +232,21 @@ class HordeJob:
         else:
             negative = ""
 
-        async def to_image(base64str: Optional[str]) -> Optional[Image.Image]:
+        def to_image(base64str: Optional[str]) -> Optional[Image.Image]:
             if not base64str:
                 return None
             # support for r2 source, which is a url rather than a base64 string
             if base64str.startswith("http"):
-                async with aiohttp.ClientSession() as session:
-                    attempts = 10
-                    while attempts > 0:
-                        try:
-                            r = await session.get(base64str)
-                            return Image.open(await r.read())
-                        except aiohttp.ClientConnectorError:
-                            attempts -= 1
-                            await asyncio.sleep(1)
-                            continue
-                    raise Exception("Failed to download source image")
+                attempts = 10
+                while attempts > 0:
+                    try:
+                        r = session.get(base64str)
+                        return Image.open(r.raw)
+                    except requests.exceptions.ConnectionError:
+                        attempts -= 1
+                        time.sleep(1)
+                        continue
+                raise Exception("Failed to download source image")
 
             return Image.open(base64.b64decode(base64str))
 
@@ -272,9 +270,9 @@ class HordeJob:
             postprocessors=payload.get("post_processing", []),
             nsfw_censor=payload.get("use_nsfw_censor", False),
             model=req["model"],
-            source_image=await to_image(req.get("source_image")),
+            source_image=to_image(req.get("source_image")),
             source_processing=req.get("source_processing"),
-            source_mask=await to_image(req.get("source_mask")),
+            source_mask=to_image(req.get("source_mask")),
             r2_upload=req.get("r2_upload"),
             hires_fix=payload.get("hires_fix", False),
         )
