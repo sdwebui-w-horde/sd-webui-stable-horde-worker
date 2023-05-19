@@ -17,12 +17,12 @@ horde = StableHorde(basedir, config)
 
 def on_app_started(demo: Optional[gr.Blocks], app: FastAPI):
     class PostData(BaseModel):
-        maintenance: Optional[bool] = None
-        maintenance_msg: Optional[str] = None
-        paused: Optional[bool] = None
-        info: Optional[str] = None
-        name: Optional[str] = None
-        team: Optional[str] = None
+        maintenance: Optional[bool]
+        maintenance_msg: Optional[str]
+        paused: Optional[bool]
+        info: Optional[str]
+        name: Optional[str]
+        team: Optional[str]
 
     @app.put("/stable-horde/workers/{worker_id}")
     def put_workers(worker_id: str, post_data: PostData):
