@@ -18,8 +18,6 @@ from modules.images import save_image
 from modules import (
     shared,
     call_queue,
-    txt2img,
-    img2img,
     processing,
     sd_models,
     sd_samplers,
@@ -344,13 +342,13 @@ class StableHorde:
             )
 
         if job.source_image is not None:
-            p = img2img.StableDiffusionProcessingImg2Img(
+            p = processing.StableDiffusionProcessingImg2Img(
                 init_images=[job.source_image],
                 mask=job.source_mask,
                 **params,
             )
         else:
-            p = txt2img.StableDiffusionProcessingTxt2Img(**params)
+            p = processing.StableDiffusionProcessingTxt2Img(**params)
 
         with call_queue.queue_lock:
             shared.state.begin()
