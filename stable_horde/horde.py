@@ -24,7 +24,8 @@ from modules import (
 )
 
 stable_horde_supported_models_url = (
-    "https://raw.githubusercontent.com/db0/AI-Horde-image-model-reference/main/stable_diffusion.json"
+    "https://raw.githubusercontent.com/db0/AI-Horde-image-model-reference/"
+    "main/stable_diffusion.json"
 )
 
 safety_model_id = "CompVis/stable-diffusion-safety-checker"
