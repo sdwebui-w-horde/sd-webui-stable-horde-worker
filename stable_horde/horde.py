@@ -38,6 +38,11 @@ def get_md5sum(filepath):
     with open(filepath, "rb") as f:
         return hashlib.md5(f.read()).hexdigest()
 
+def get_sha256sum(filepath):
+    import hashlib
+
+    with open(filepath, "rb") as f:
+        return hashlib.sha256(f.read()).hexdigest()
 
 class State:
     def __init__(self):
@@ -114,10 +119,10 @@ class StableHorde:
         if checkpoint_info is None:
             return f"Model checkpoint {model_checkpoint} not found"
 
-        local_hash = get_md5sum(checkpoint_info.filename)
+        local_hash = get_sha256sum(checkpoint_info.filename)
         for model in self.supported_models:
             try:
-                remote_hash = model["config"]["files"][0]["md5sum"]
+                remote_hash = model["config"]["files"][0]["sha256sum"]
             except KeyError:
                 continue
 
@@ -133,33 +138,33 @@ class StableHorde:
         self.current_models = {
             k: v for k, v in self.current_models.items() if v in model_names
         }
-        # get the md5sum of all supported models
+        # get the sha256 of all supported models
         for model in self.supported_models:
             try:
-                remote_hashes[model["config"]["files"][0]["md5sum"]] = model["name"]
+                remote_hashes[model["config"]["files"][0]["sha256sum"]] = model["name"]
             except KeyError:
                 continue
 
-        # get the md5sum of all local models and compare it to the remote hashes
-        # if the md5sum matches, add the model to the current models list
+        # get the sha256 of all local models and compare it to the remote hashes
+        # if the sha256 matches, add the model to the current models list
         for checkpoint in sd_models.checkpoints_list.values():
             checkpoint: sd_models.CheckpointInfo
             if checkpoint.name in model_names:
-                # skip expensive md5sum calc if the model is
+                # skip expensive sha256 calc if the model is
                 # already in the current models list
                 if checkpoint.name in self.config.current_models.values():
                     continue
-                print(f"Calculating md5sum for {checkpoint.name}")
-                local_hash = get_md5sum(checkpoint.filename)
+                print(f"Calculating sha256 for {checkpoint.name}")
+                local_hash = get_sha256sum(checkpoint.filename)
                 if local_hash in remote_hashes:
                     self.current_models[remote_hashes[local_hash]] = checkpoint.name
                     print(
-                        f"md5sum for {checkpoint.name} is {local_hash} \
+                        f"sha256 for {checkpoint.name} is {local_hash} \
                             and it's supported by StableHorde"
                     )
                 else:
                     print(
-                        f"md5sum for {checkpoint.name} is {local_hash} \
+                        f"sha256 for {checkpoint.name} is {local_hash} \
                             but it's not supported by StableHorde"
                     )
 
