@@ -38,11 +38,13 @@ def get_md5sum(filepath):
     with open(filepath, "rb") as f:
         return hashlib.md5(f.read()).hexdigest()
 
+
 def get_sha256sum(filepath):
     import hashlib
 
     with open(filepath, "rb") as f:
         return hashlib.sha256(f.read()).hexdigest()
+
 
 class State:
     def __init__(self):
