@@ -2,8 +2,10 @@ from typing import Optional
 
 from fastapi import FastAPI
 import gradio as gr
+from gradio.utils import run_coro_in_background
+import requests
 
-from modules import scripts, script_callbacks, sd_models
+from modules import scripts, script_callbacks, sd_models, shared
 
 from stable_horde import StableHorde, StableHordeConfig
 
@@ -15,8 +17,23 @@ horde = StableHorde(basedir, config)
 def on_app_started(demo: Optional[gr.Blocks], app: FastAPI):
     import asyncio
 
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(horde.run())
+    started = False
+
+    @app.on_event("startup")
+    @app.get("/horde/startup-events")
+    async def startup_event():
+        nonlocal started
+        if not started:
+            run_coro_in_background(horde.run)
+            started = True
+
+    # This is a hack to make sure the startup event is called even it is not in an async scope
+    # fix https://github.com/sdwebui-w-horde/sd-webui-stable-horde-worker/issues/109
+    if demo is None:
+        local_url = f"http://localhost:{shared.cmd_opts.port if shared.cmd_opts.port else 7861}/"
+    else:
+        local_url = demo.local_url
+    requests.get(f"{local_url}horde/startup-events")
 
 
 def apply_stable_horde_settings(
