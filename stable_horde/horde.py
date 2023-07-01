@@ -485,7 +485,7 @@ class StableHorde:
             images=x_image, clip_input=safety_checker_input.pixel_values
         )
 
-        if has_nsfw_concept:
+        if has_nsfw_concept and any(has_nsfw_concept):
             return self.sfw_request_censor, has_nsfw_concept
         return Image.fromarray(image), has_nsfw_concept
 
