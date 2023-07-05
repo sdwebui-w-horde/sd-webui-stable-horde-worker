@@ -187,8 +187,7 @@ def on_ui_tabs():
                             value=[
                                 model.name
                                 for model in sd_models.checkpoints_list.values()
-                                if model.name
-                                in list(config.current_models.values())
+                                if model.name in list(config.current_models.values())
                             ],
                             label="Selected models for sharing",
                             elem_id=tab_prefix + "local-selected-models",
@@ -209,9 +208,7 @@ def on_ui_tabs():
                     show_images = gr.Checkbox(
                         config.show_image_preview, label="Show Images"
                     )
-                    save_images = gr.Checkbox(
-                        config.save_images, label="Save Images"
-                    )
+                    save_images = gr.Checkbox(config.save_images, label="Save Images")
 
                     refresh = gr.Button(
                         "Refresh",
@@ -237,9 +234,7 @@ def on_ui_tabs():
                         readonly=True,
                     ).style(grid=4)
 
-                    def on_refresh(
-                        image=False, show_images=config.show_image_preview
-                    ):
+                    def on_refresh(image=False, show_images=config.show_image_preview):
                         cid = f"Current ID: {horde.state.id}"
                         html = "".join(
                             map(
@@ -248,9 +243,7 @@ def on_ui_tabs():
                             )
                         )
                         images = (
-                            [horde.state.image]
-                            if horde.state.image is not None
-                            else []
+                            [horde.state.image] if horde.state.image is not None else []
                         )
                         if image and show_images:
                             return cid, html, horde.state.status, images
