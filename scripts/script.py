@@ -27,9 +27,11 @@ def on_app_started(demo: Optional[gr.Blocks], app: FastAPI):
             run_coro_in_background(horde.run)
             started = True
 
-    # This is a hack to make sure the startup event is called even it is not in an async scope
+    # This is a hack to make sure the startup event is
+    # called even it is not in an async scope
     # fix https://github.com/sdwebui-w-horde/sd-webui-stable-horde-worker/issues/109
     if demo is None:
+        # flake8: noqa: E501
         local_url = f"http://localhost:{shared.cmd_opts.port if shared.cmd_opts.port else 7861}/"
     else:
         local_url = demo.local_url
@@ -124,10 +126,12 @@ def on_ui_tabs():
                             config.allow_painting, label="Allow Painting"
                         )
                         allow_unsafe_ipaddr = gr.Checkbox(
-                            config.allow_unsafe_ipaddr, label="Allow Unsafe IP Address"
+                            config.allow_unsafe_ipaddr,
+                            label="Allow Unsafe IP Address",
                         )
                         allow_post_processing = gr.Checkbox(
-                            config.allow_post_processing, label="Allow Post Processing"
+                            config.allow_post_processing,
+                            label="Allow Post Processing",
                         )
                         restore_settings = gr.Checkbox(
                             config.restore_settings,
@@ -208,7 +212,9 @@ def on_ui_tabs():
                     save_images = gr.Checkbox(config.save_images, label="Save Images")
 
                     refresh = gr.Button(
-                        "Refresh", visible=False, elem_id=tab_prefix + "refresh"
+                        "Refresh",
+                        visible=False,
+                        elem_id=tab_prefix + "refresh",
                     )
                     refresh_image = gr.Button(
                         "Refresh Image",
