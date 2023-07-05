@@ -12,7 +12,9 @@ from diffusers.pipelines.stable_diffusion.safety_checker import (
     StableDiffusionSafetyChecker,
 )
 from PIL import Image
-from transformers.models.auto.feature_extraction_auto import AutoFeatureExtractor
+from transformers.models.auto.feature_extraction_auto import (
+    AutoFeatureExtractor,
+)
 
 from modules.images import save_image
 from modules import (
@@ -23,10 +25,8 @@ from modules import (
     sd_samplers,
 )
 
-stable_horde_supported_models_url = (
-    "https://raw.githubusercontent.com/db0/AI-Horde-image-model-reference/"
-    "main/stable_diffusion.json"
-)
+stable_horde_supported_models_url = "https://raw.githubusercontent.com/Haidra-Org/\
+    AI-Horde-image-model-reference/main/stable_diffusion.json"
 
 safety_model_id = "CompVis/stable-diffusion-safety-checker"
 safety_feature_extractor = None
@@ -86,7 +86,9 @@ class StableHorde:
         self.session: Optional[aiohttp.ClientSession] = None
 
         self.sfw_request_censor = Image.open(
-            path.join(self.config.basedir, "assets", "nsfw_censor_sfw_request.png")
+            path.join(
+                self.config.basedir, "assets", "nsfw_censor_sfw_request.png"
+            )
         )
 
         self.supported_models = []
@@ -100,7 +102,9 @@ class StableHorde:
             attempts -= 1
             async with aiohttp.ClientSession() as session:
                 try:
-                    async with session.get(stable_horde_supported_models_url) as resp:
+                    async with session.get(
+                        stable_horde_supported_models_url
+                    ) as resp:
                         if resp.status != 200:
                             raise aiohttp.ClientError()
                         data = await resp.text()
@@ -118,18 +122,19 @@ class StableHorde:
 
     def detect_current_model(self):
         model_checkpoint = shared.opts.sd_model_checkpoint
-        checkpoint_info = sd_models.checkpoints_list.get(model_checkpoint, None)
+        checkpoint_info = sd_models.checkpoints_list.get(
+            model_checkpoint, None
+        )
         if checkpoint_info is None:
             return f"Model checkpoint {model_checkpoint} not found"
 
-        local_hash = get_sha256sum(checkpoint_info.filename)
         for model in self.supported_models:
             try:
                 remote_hash = model["config"]["files"][0]["sha256sum"]
             except KeyError:
                 continue
 
-            if local_hash == remote_hash:
+            if shared.opts.sd_checkpoint_hash == remote_hash:
                 self.current_models = {model["name"]: checkpoint_info.name}
 
         if len(self.current_models) == 0:
@@ -144,23 +149,30 @@ class StableHorde:
         # get the sha256 of all supported models
         for model in self.supported_models:
             try:
-                remote_hashes[model["config"]["files"][0]["sha256sum"]] = model["name"]
+                remote_hashes[
+                    model["config"]["files"][0]["sha256sum"]
+                ] = model["name"]
             except KeyError:
                 continue
-
         # get the sha256 of all local models and compare it to the remote hashes
         # if the sha256 matches, add the model to the current models list
         for checkpoint in sd_models.checkpoints_list.values():
             checkpoint: sd_models.CheckpointInfo
             if checkpoint.name in model_names:
-                # skip expensive sha256 calc if the model is
-                # already in the current models list
+                # skip sha256 calculation if the model already has hash
+                if checkpoint.sha256 is None:
+                    local_hash = sd_models.hashes.sha256(
+                        checkpoint.filename, f"checkpoint/{checkpoint.name}"
+                    )
+                else:
+                    local_hash = checkpoint.sha256
                 if checkpoint.name in self.config.current_models.values():
                     continue
-                print(f"Calculating sha256 for {checkpoint.name}")
-                local_hash = get_sha256sum(checkpoint.filename)
+
                 if local_hash in remote_hashes:
-                    self.current_models[remote_hashes[local_hash]] = checkpoint.name
+                    self.current_models[
+                        remote_hashes[local_hash]
+                    ] = checkpoint.name
                     print(
                         f"sha256 for {checkpoint.name} is {local_hash} \
                             and it's supported by StableHorde"
@@ -390,8 +402,12 @@ class StableHorde:
         if not has_nsfw and (
             "GFPGAN" in postprocessors or "CodeFormers" in postprocessors
         ):
-            model = "CodeFormer" if "CodeFormers" in postprocessors else "GFPGAN"
-            face_restorators = [x for x in shared.face_restorers if x.name() == model]
+            model = (
+                "CodeFormer" if "CodeFormers" in postprocessors else "GFPGAN"
+            )
+            face_restorators = [
+                x for x in shared.face_restorers if x.name() == model
+            ]
             if len(face_restorators) == 0:
                 print(f"ERROR: No face restorer for {model}")
 
@@ -431,7 +447,13 @@ class StableHorde:
         # Saving image locally
         infotext = (
             processing.create_infotext(
-                p, p.all_prompts, p.all_seeds, p.all_subseeds, "Stable Horde", 0, 0
+                p,
+                p.all_prompts,
+                p.all_seeds,
+                p.all_subseeds,
+                "Stable Horde",
+                0,
+                0,
             )
             if shared.opts.enable_pnginfo
             else None
@@ -439,10 +461,14 @@ class StableHorde:
         # workaround for model name and hash since webui
         # uses shard.sd_model instead of local_model
         infotext = sub(
-            "Model:(.*?),", "Model: " + local_model.split(".")[0] + ",", infotext
+            "Model:(.*?),",
+            "Model: " + local_model.split(".")[0] + ",",
+            infotext,
         )
         infotext = sub(
-            "Model hash:(.*?),", "Model hash: " + local_model_shorthash + ",", infotext
+            "Model hash:(.*?),",
+            "Model hash: " + local_model_shorthash + ",",
+            infotext,
         )
         if self.config.save_images:
             save_image(
@@ -480,7 +506,9 @@ class StableHorde:
                 safety_model_id
             )
 
-        safety_checker_input = safety_feature_extractor(x_image, return_tensors="pt")
+        safety_checker_input = safety_feature_extractor(
+            x_image, return_tensors="pt"
+        )
         image, has_nsfw_concept = safety_checker(
             images=x_image, clip_input=safety_checker_input.pixel_values
         )
@@ -495,14 +523,23 @@ class StableHorde:
                 "apikey": self.config.apikey,
                 "Content-Type": "application/json",
             }
-            self.session = aiohttp.ClientSession(self.config.endpoint, headers=headers)
+            self.session = aiohttp.ClientSession(
+                self.config.endpoint, headers=headers
+            )
+        # check if apikey has changed
+        elif self.session.headers["apikey"] != self.config.apikey:
+            await self.session.close()
+            self.session = None
+            self.session = await self.get_session()
         return self.session
 
     def handle_error(self, status: int, res: Dict[str, Any]):
         if status == 401:
             self.state.status = "ERROR: Invalid API Key"
         elif status == 403:
-            self.state.status = f"ERROR: Access Denied. ({res.get('message', '')})"
+            self.state.status = (
+                f"ERROR: Access Denied. ({res.get('message', '')})"
+            )
         elif status == 404:
             self.state.status = "ERROR: Request Not Found"
         else:
