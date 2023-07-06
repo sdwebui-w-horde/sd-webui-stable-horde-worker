@@ -33,20 +33,6 @@ safety_feature_extractor = None
 safety_checker = None
 
 
-def get_md5sum(filepath):
-    import hashlib
-
-    with open(filepath, "rb") as f:
-        return hashlib.md5(f.read()).hexdigest()
-
-
-def get_sha256sum(filepath):
-    import hashlib
-
-    with open(filepath, "rb") as f:
-        return hashlib.sha256(f.read()).hexdigest()
-
-
 class State:
     def __init__(self):
         self._status = ""
@@ -86,7 +72,9 @@ class StableHorde:
         self.session: Optional[aiohttp.ClientSession] = None
 
         self.sfw_request_censor = Image.open(
-            path.join(self.config.basedir, "assets", "nsfw_censor_sfw_request.png")
+            path.join(
+                self.config.basedir, "assets", "nsfw_censor_sfw_request.png"
+            )
         )
 
         self.supported_models = []
@@ -100,7 +88,9 @@ class StableHorde:
             attempts -= 1
             async with aiohttp.ClientSession() as session:
                 try:
-                    async with session.get(stable_horde_supported_models_url) as resp:
+                    async with session.get(
+                        stable_horde_supported_models_url
+                    ) as resp:
                         if resp.status != 200:
                             raise aiohttp.ClientError()
                         data = await resp.text()
@@ -118,7 +108,9 @@ class StableHorde:
 
     def detect_current_model(self):
         model_checkpoint = shared.opts.sd_model_checkpoint
-        checkpoint_info = sd_models.checkpoints_list.get(model_checkpoint, None)
+        checkpoint_info = sd_models.checkpoints_list.get(
+            model_checkpoint, None
+        )
         if checkpoint_info is None:
             return f"Model checkpoint {model_checkpoint} not found"
 
@@ -143,7 +135,9 @@ class StableHorde:
         # get the sha256 of all supported models
         for model in self.supported_models:
             try:
-                remote_hashes[model["config"]["files"][0]["sha256sum"]] = model["name"]
+                remote_hashes[
+                    model["config"]["files"][0]["sha256sum"]
+                ] = model["name"]
             except KeyError:
                 continue
         # get the sha256 of all local models and compare it to the remote hashes
@@ -162,7 +156,9 @@ class StableHorde:
                     continue
 
                 if local_hash in remote_hashes:
-                    self.current_models[remote_hashes[local_hash]] = checkpoint.name
+                    self.current_models[
+                        remote_hashes[local_hash]
+                    ] = checkpoint.name
                     print(
                         f"sha256 for {checkpoint.name} is {local_hash} \
                             and it's supported by StableHorde"
@@ -392,8 +388,12 @@ class StableHorde:
         if not has_nsfw and (
             "GFPGAN" in postprocessors or "CodeFormers" in postprocessors
         ):
-            model = "CodeFormer" if "CodeFormers" in postprocessors else "GFPGAN"
-            face_restorators = [x for x in shared.face_restorers if x.name() == model]
+            model = (
+                "CodeFormer" if "CodeFormers" in postprocessors else "GFPGAN"
+            )
+            face_restorators = [
+                x for x in shared.face_restorers if x.name() == model
+            ]
             if len(face_restorators) == 0:
                 print(f"ERROR: No face restorer for {model}")
 
@@ -492,7 +492,9 @@ class StableHorde:
                 safety_model_id
             )
 
-        safety_checker_input = safety_feature_extractor(x_image, return_tensors="pt")
+        safety_checker_input = safety_feature_extractor(
+            x_image, return_tensors="pt"
+        )
         image, has_nsfw_concept = safety_checker(
             images=x_image, clip_input=safety_checker_input.pixel_values
         )
@@ -507,7 +509,9 @@ class StableHorde:
                 "apikey": self.config.apikey,
                 "Content-Type": "application/json",
             }
-            self.session = aiohttp.ClientSession(self.config.endpoint, headers=headers)
+            self.session = aiohttp.ClientSession(
+                self.config.endpoint, headers=headers
+            )
         # check if apikey has changed
         elif self.session.headers["apikey"] != self.config.apikey:
             await self.session.close()
@@ -519,7 +523,9 @@ class StableHorde:
         if status == 401:
             self.state.status = "ERROR: Invalid API Key"
         elif status == 403:
-            self.state.status = f"ERROR: Access Denied. ({res.get('message', '')})"
+            self.state.status = (
+                f"ERROR: Access Denied. ({res.get('message', '')})"
+            )
         elif status == 404:
             self.state.status = "ERROR: Request Not Found"
         else:
