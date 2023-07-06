@@ -14,7 +14,9 @@ from diffusers.pipelines.stable_diffusion.safety_checker import (
     StableDiffusionSafetyChecker,
 )
 from PIL import Image
-from transformers.models.auto.feature_extraction_auto import AutoFeatureExtractor
+from transformers.models.auto.feature_extraction_auto import (
+    AutoFeatureExtractor,
+)
 
 from modules.images import save_image
 from modules import (
@@ -25,28 +27,12 @@ from modules import (
     sd_samplers,
 )
 
-stable_horde_supported_models_url = (
-    "https://raw.githubusercontent.com/db0/AI-Horde-image-model-reference/"
-    "main/stable_diffusion.json"
-)
+# flake8: noqa: E501
+stable_horde_supported_models_url = "https://raw.githubusercontent.com/Haidra-Org/AI-Horde-image-model-reference/main/stable_diffusion.json"
 
 safety_model_id = "CompVis/stable-diffusion-safety-checker"
 safety_feature_extractor = None
 safety_checker = None
-
-
-def get_md5sum(filepath):
-    import hashlib
-
-    with open(filepath, "rb") as f:
-        return hashlib.md5(f.read()).hexdigest()
-
-
-def get_sha256sum(filepath):
-    import hashlib
-
-    with open(filepath, "rb") as f:
-        return hashlib.sha256(f.read()).hexdigest()
 
 
 class State:
@@ -134,14 +120,13 @@ class StableHorde:
         if checkpoint_info is None:
             return f"Model checkpoint {model_checkpoint} not found"
 
-        local_hash = get_sha256sum(checkpoint_info.filename)
         for model in self.supported_models:
             try:
                 remote_hash = model["config"]["files"][0]["sha256sum"]
             except KeyError:
                 continue
 
-            if local_hash == remote_hash:
+            if shared.opts.sd_checkpoint_hash == remote_hash:
                 self.current_models = {model["name"]: checkpoint_info.name}
 
         if len(self.current_models) == 0:
@@ -159,18 +144,21 @@ class StableHorde:
                 remote_hashes[model["config"]["files"][0]["sha256sum"]] = model["name"]
             except KeyError:
                 continue
-
         # get the sha256 of all local models and compare it to the remote hashes
         # if the sha256 matches, add the model to the current models list
         for checkpoint in sd_models.checkpoints_list.values():
             checkpoint: sd_models.CheckpointInfo
             if checkpoint.name in model_names:
-                # skip expensive sha256 calc if the model is
-                # already in the current models list
+                # skip sha256 calculation if the model already has hash
+                if checkpoint.sha256 is None:
+                    local_hash = sd_models.hashes.sha256(
+                        checkpoint.filename, f"checkpoint/{checkpoint.name}"
+                    )
+                else:
+                    local_hash = checkpoint.sha256
                 if checkpoint.name in self.config.current_models.values():
                     continue
-                print(f"Calculating sha256 for {checkpoint.name}")
-                local_hash = get_sha256sum(checkpoint.filename)
+
                 if local_hash in remote_hashes:
                     self.current_models[remote_hashes[local_hash]] = checkpoint.name
                     print(
@@ -443,7 +431,13 @@ class StableHorde:
         # Saving image locally
         infotext = (
             processing.create_infotext(
-                p, p.all_prompts, p.all_seeds, p.all_subseeds, "Stable Horde", 0, 0
+                p,
+                p.all_prompts,
+                p.all_seeds,
+                p.all_subseeds,
+                "Stable Horde",
+                0,
+                0,
             )
             if shared.opts.enable_pnginfo
             else None
@@ -451,10 +445,14 @@ class StableHorde:
         # workaround for model name and hash since webui
         # uses shard.sd_model instead of local_model
         infotext = sub(
-            "Model:(.*?),", "Model: " + local_model.split(".")[0] + ",", infotext
+            "Model:(.*?),",
+            "Model: " + local_model.split(".")[0] + ",",
+            infotext,
         )
         infotext = sub(
-            "Model hash:(.*?),", "Model hash: " + local_model_shorthash + ",", infotext
+            "Model hash:(.*?),",
+            "Model hash: " + local_model_shorthash + ",",
+            infotext,
         )
         if self.config.save_images:
             save_image(
@@ -497,7 +495,7 @@ class StableHorde:
             images=x_image, clip_input=safety_checker_input.pixel_values
         )
 
-        if has_nsfw_concept:
+        if has_nsfw_concept and any(has_nsfw_concept):
             return self.sfw_request_censor, has_nsfw_concept
         return Image.fromarray(image), has_nsfw_concept
 
