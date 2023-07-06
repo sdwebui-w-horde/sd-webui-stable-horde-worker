@@ -188,8 +188,7 @@ def get_worker_ui():
                             value=[
                                 model.name
                                 for model in sd_models.checkpoints_list.values()
-                                if model.name
-                                in list(config.current_models.values())
+                                if model.name in list(config.current_models.values())
                             ],
                             label="Selected models for sharing",
                             elem_id=tab_prefix + "local-selected-models",
@@ -210,9 +209,7 @@ def get_worker_ui():
                     show_images = gr.Checkbox(
                         config.show_image_preview, label="Show Images"
                     )
-                    save_images = gr.Checkbox(
-                        config.save_images, label="Save Images"
-                    )
+                    save_images = gr.Checkbox(config.save_images, label="Save Images")
 
                     refresh_image = gr.Button(
                         "Refresh Image",
@@ -235,9 +232,7 @@ def get_worker_ui():
                         readonly=True,
                     ).style(grid=4)
 
-                    def on_refresh(
-                        image=True, show_images=config.show_image_preview
-                    ):
+                    def on_refresh(image=True, show_images=config.show_image_preview):
                         cid = horde.state.id
                         images = []
 
@@ -298,9 +293,7 @@ def get_user_ui():
     with gr.Blocks() as user_ui:
         with gr.Row():
             with gr.Column(scale=1):
-                user_update = gr.Button(
-                    "Update", elem_id=f"{tab_prefix}user-update"
-                )
+                user_update = gr.Button("Update", elem_id=f"{tab_prefix}user-update")
             with gr.Column(scale=4):
                 user_welcome = gr.Markdown(
                     "**Try click update button to fetch the user info**",
