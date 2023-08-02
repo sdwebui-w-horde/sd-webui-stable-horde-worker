@@ -129,7 +129,7 @@ class StableHorde:
         # get the sha256 of all supported models
         for model in self.supported_models:
             try:
-                remote_hashes[model["config"]["files"][0]["sha256sum"]] = model["name"]
+                remote_hashes[model["config"]["files"][0]["sha256sum"].lower()] = model["name"]
             except KeyError:
                 continue
         # get the sha256 of all local models and compare it to the remote hashes
