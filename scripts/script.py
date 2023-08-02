@@ -2,8 +2,9 @@ from typing import Optional
 
 from fastapi import FastAPI
 import gradio as gr
-from gradio.utils import run_coro_in_background
+import asyncio
 import requests
+from threading import Thread
 
 from modules import scripts, script_callbacks, sd_models, shared
 
@@ -15,8 +16,6 @@ horde = StableHorde(basedir, config)
 
 
 def on_app_started(demo: Optional[gr.Blocks], app: FastAPI):
-    import asyncio
-
     started = False
 
     @app.on_event("startup")
@@ -24,7 +23,8 @@ def on_app_started(demo: Optional[gr.Blocks], app: FastAPI):
     async def startup_event():
         nonlocal started
         if not started:
-            run_coro_in_background(horde.run)
+            thread = Thread(daemon=True, target=horde_thread)
+            thread.start()
             started = True
 
     # This is a hack to make sure the startup event is
@@ -36,6 +36,10 @@ def on_app_started(demo: Optional[gr.Blocks], app: FastAPI):
     else:
         local_url = demo.local_url
     requests.get(f"{local_url}horde/startup-events")
+
+
+def horde_thread():
+    asyncio.run(horde.run())
 
 
 def apply_stable_horde_settings(
