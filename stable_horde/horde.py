@@ -278,8 +278,8 @@ class StableHorde:
                 {"scheduler": "karras"},
             ),
             SamplerData(
-                "DPM++ 2S A Karras",
-                lambda model, funcname="sample_dpmpp_2s_a": KDiffusionSampler(
+                "DPM++ 2S a Karras",
+                lambda model, funcname="sample_dpmpp_2s_ancestral": KDiffusionSampler(
                     funcname, model
                 ),
                 ["k_dpmpp_2s_a_ka"],
