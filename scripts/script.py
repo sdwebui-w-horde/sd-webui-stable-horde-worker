@@ -237,7 +237,8 @@ def on_ui_tabs():
                         elem_id=tab_prefix + "preview",
                         visible=config.show_image_preview,
                         readonly=True,
-                    ), columns=4)
+                        columns=4,
+                    )
 
                     def on_refresh(image=False, show_images=config.show_image_preview):
                         cid = f"Current ID: {horde.state.id}"
