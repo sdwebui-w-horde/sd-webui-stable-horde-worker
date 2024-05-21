@@ -263,9 +263,7 @@ class StableHorde:
             ),
             SamplerData(
                 "LMS Karras",
-                lambda model, funcname="sample_lms": KDiffusionSampler(
-                    funcname, model
-                ),
+                lambda model, funcname="sample_lms": KDiffusionSampler(funcname, model),
                 ["k_lms_ka"],
                 {"scheduler": "karras"},
             ),
