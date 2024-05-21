@@ -1,12 +1,14 @@
-import asyncio
 import json
+import time
 from os import path
 from typing import Any, Dict, Optional
 from re import sub
 
-import aiohttp
+import requests
 from .job import HordeJob
 from .config import StableHordeConfig
+from .user import HordeUser
+from .utils import HordeRequestSession
 import numpy as np
 from diffusers.pipelines.stable_diffusion.safety_checker import (
     StableDiffusionSafetyChecker,
@@ -43,6 +45,7 @@ class State:
         self.steps: Optional[int] = None
         self.sampler: Optional[str] = None
         self.image: Optional[Image.Image] = None
+        self.user: Optional[HordeUser] = None
 
     @property
     def status(self):
@@ -69,7 +72,7 @@ class StableHorde:
     def __init__(self, basedir: str, config: StableHordeConfig):
         self.basedir = basedir
         self.config = config
-        self.session: Optional[aiohttp.ClientSession] = None
+        self.session: Optional[requests.Session] = None
 
         self.sfw_request_censor = Image.open(
             path.join(self.config.basedir, "assets", "nsfw_censor_sfw_request.png")
@@ -79,27 +82,36 @@ class StableHorde:
         self.current_models = {}
 
         self.state = State()
+        self.inited = False
 
-    async def get_supported_models(self):
+    def init(self):
+        if self.config.apikey:
+            self.state.user = HordeUser(self.get_session())
+
+        self.get_supported_models()
+        self.current_models = self.config.current_models
+
+        self.inited = True
+
+    def get_supported_models(self):
         attempts = 10
         while attempts > 0:
             attempts -= 1
-            async with aiohttp.ClientSession() as session:
-                try:
-                    async with session.get(stable_horde_supported_models_url) as resp:
-                        if resp.status != 200:
-                            raise aiohttp.ClientError()
-                        data = await resp.text()
-                        supported_models: Dict[str, Any] = json.loads(data)
+            try:
+                resp = requests.get(stable_horde_supported_models_url)
+                if resp.status_code != 200:
+                    raise requests.HTTPError()
+                data = resp.text
+                supported_models: Dict[str, Any] = json.loads(data)
 
-                        self.supported_models = list(supported_models.values())
-                        return
-                except Exception:
-                    print(
-                        f"Failed to get supported models, retrying in 1 second... \
-                            ({attempts} attempts left"
-                    )
-                    await asyncio.sleep(1)
+                self.supported_models = list(supported_models.values())
+                return
+            except Exception:
+                print(
+                    f"Failed to get supported models, retrying in 1 second... \
+                        ({attempts} attempts left"
+                )
+                time.sleep(1)
         raise Exception("Failed to get supported models after 10 attempts")
 
     def detect_current_model(self):
@@ -165,9 +177,9 @@ class StableHorde:
         self.config.save()
         return self.current_models
 
-    async def run(self):
-        await self.get_supported_models()
-        self.current_models = self.config.current_models
+    def run(self):
+        if not self.inited:
+            self.init()
 
         while True:
             if len(self.current_models) == 0:
@@ -177,25 +189,25 @@ class StableHorde:
                     # Wait 10 seconds before retrying to detect the current model
                     # if the current model is not listed in the Stable Horde supported
                     # models, we don't want to spam the server with requests
-                    await asyncio.sleep(10)
+                    time.sleep(10)
                     continue
 
-            await asyncio.sleep(self.config.interval)
+            time.sleep(self.config.interval)
 
             if self.config.enabled:
                 try:
                     # Require a queue lock to prevent getting jobs when
                     # there are generation jobs from webui.
                     with call_queue.queue_lock:
-                        req = await HordeJob.get(
-                            await self.get_session(),
+                        req = HordeJob.get(
+                            self.get_session(),
                             self.config,
                             list(self.current_models.keys()),
                         )
                     if req is None:
                         continue
 
-                    await self.handle_request(req)
+                    self.handle_request(req)
                 except Exception:
                     import traceback
 
@@ -294,7 +306,7 @@ class StableHorde:
             for alias in sampler.aliases:
                 sd_samplers.samplers_map[alias.lower()] = sampler.name
 
-    async def handle_request(self, job: HordeJob):
+    def handle_request(self, job: HordeJob):
         self.patch_sampler_names()
 
         self.state.status = f"Get popped generation request {job.id}, \
@@ -488,7 +500,7 @@ class StableHorde:
         self.state.sampler = sampler_name
         self.state.image = image
 
-        res = await job.submit(image)
+        res = job.submit(image)
         if res:
             self.state.status = f"Submission accepted, reward {res} received."
 
@@ -513,18 +525,13 @@ class StableHorde:
             return self.sfw_request_censor, has_nsfw_concept
         return Image.fromarray(image), has_nsfw_concept
 
-    async def get_session(self) -> aiohttp.ClientSession:
+    def get_session(self) -> requests.Session:
         if self.session is None:
             headers = {
                 "apikey": self.config.apikey,
                 "Content-Type": "application/json",
             }
-            self.session = aiohttp.ClientSession(self.config.endpoint, headers=headers)
-        # check if apikey has changed
-        elif self.session.headers["apikey"] != self.config.apikey:
-            await self.session.close()
-            self.session = None
-            self.session = await self.get_session()
+            self.session = HordeRequestSession(self.config.endpoint, headers)
         return self.session
 
     def handle_error(self, status: int, res: Dict[str, Any]):
