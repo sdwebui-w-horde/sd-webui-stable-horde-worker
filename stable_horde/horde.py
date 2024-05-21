@@ -261,6 +261,30 @@ class StableHorde:
                 ["k_dpm_fast_ka"],
                 {"scheduler": "karras"},
             ),
+            SamplerData(
+                "LMS Karras",
+                lambda model, funcname="sample_lms": KDiffusionSampler(
+                    funcname, model
+                ),
+                ["k_lms_ka"],
+                {"scheduler": "karras"},
+            ),
+            SamplerData(
+                "DPM++ SDE Karras",
+                lambda model, funcname="sample_dpmpp_sde": KDiffusionSampler(
+                    funcname, model
+                ),
+                ["k_dpmpp_sde_ka"],
+                {"scheduler": "karras"},
+            ),
+            SamplerData(
+                "DPM++ 2S a Karras",
+                lambda model, funcname="sample_dpmpp_2s_ancestral": KDiffusionSampler(
+                    funcname, model
+                ),
+                ["k_dpmpp_2s_a_ka"],
+                {"scheduler": "karras"},
+            ),
         ]
         sd_samplers.samplers.extend(samplers)
         sd_samplers.samplers_for_img2img.extend(samplers)
