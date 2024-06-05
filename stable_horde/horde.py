@@ -221,7 +221,12 @@ class StableHorde:
             return
 
         samplers = [
-            SamplerData(name, lambda model, fn=func: KDiffusionSampler(fn, model), [alias], {"scheduler": "karras"})
+            SamplerData(
+                name,
+                lambda model, fn=func: KDiffusionSampler(fn, model),
+                [alias],
+                {"scheduler": "karras"},
+            )
             for name, func, alias in [
                 ("Euler a Karras", "sample_euler_ancestral", "k_euler_a_ka"),
                 ("Euler Karras", "sample_euler", "k_euler_ka"),
