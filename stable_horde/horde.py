@@ -221,68 +221,18 @@ class StableHorde:
             return
 
         samplers = [
-            SamplerData(
-                "Euler a Karras",
-                lambda model, funcname="sample_euler_ancestral": KDiffusionSampler(
-                    funcname, model
-                ),
-                ["k_euler_a_ka"],
-                {"scheduler": "karras"},
-            ),
-            SamplerData(
-                "Euler Karras",
-                lambda model, funcname="sample_euler": KDiffusionSampler(
-                    funcname, model
-                ),
-                ["k_euler_ka"],
-                {"scheduler": "karras"},
-            ),
-            SamplerData(
-                "Heun Karras",
-                lambda model, funcname="sample_heun": KDiffusionSampler(
-                    funcname, model
-                ),
-                ["k_heun_ka"],
-                {"scheduler": "karras"},
-            ),
-            SamplerData(
-                "DPM adaptive Karras",
-                lambda model, funcname="sample_dpm_adaptive": KDiffusionSampler(
-                    funcname, model
-                ),
-                ["k_dpm_ad_ka"],
-                {"scheduler": "karras"},
-            ),
-            SamplerData(
-                "DPM fast Karras",
-                lambda model, funcname="sample_dpm_fast": KDiffusionSampler(
-                    funcname, model
-                ),
-                ["k_dpm_fast_ka"],
-                {"scheduler": "karras"},
-            ),
-            SamplerData(
-                "LMS Karras",
-                lambda model, funcname="sample_lms": KDiffusionSampler(funcname, model),
-                ["k_lms_ka"],
-                {"scheduler": "karras"},
-            ),
-            SamplerData(
-                "DPM++ SDE Karras",
-                lambda model, funcname="sample_dpmpp_sde": KDiffusionSampler(
-                    funcname, model
-                ),
-                ["k_dpmpp_sde_ka"],
-                {"scheduler": "karras"},
-            ),
-            SamplerData(
-                "DPM++ 2S a Karras",
-                lambda model, funcname="sample_dpmpp_2s_ancestral": KDiffusionSampler(
-                    funcname, model
-                ),
-                ["k_dpmpp_2s_a_ka"],
-                {"scheduler": "karras"},
-            ),
+            SamplerData(name, lambda model, fn=func: KDiffusionSampler(fn, model), [alias], {"scheduler": "karras"})
+            for name, func, alias in [
+                ("Euler a Karras", "sample_euler_ancestral", "k_euler_a_ka"),
+                ("Euler Karras", "sample_euler", "k_euler_ka"),
+                ("Heun Karras", "sample_heun", "k_heun_ka"),
+                ("DPM adaptive Karras", "sample_dpm_adaptive", "k_dpm_ad_ka"),
+                ("DPM fast Karras", "sample_dpm_fast", "k_dpm_fast_ka"),
+                ("DPM 2 Karras", "sample_dpm_2", "k_dpm_2_ka")
+                ("LMS Karras", "sample_lms", "k_lms_ka"),
+                ("DPM++ SDE Karras", "sample_dpmpp_sde", "k_dpmpp_sde_ka"),
+                ("DPM++ 2S a Karras", "sample_dpmpp_2s_ancestral", "k_dpmpp_2s_a_ka"),
+            ]
         ]
         sd_samplers.samplers.extend(samplers)
         sd_samplers.samplers_for_img2img.extend(samplers)
